@@ -3,21 +3,25 @@ using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.ProBuilder.Shapes;
 
 public class Master : MonoBehaviour
 {
     [SerializeField] Ground groundPrefab;
     [SerializeField] Heli heliPrefab;
     [SerializeField] Blocker blockerPrefab;
+    [SerializeField] GameObject marker;
 
     public Vector3 groundSpawnLocation = new(0,0,0);
     public Vector3 heliSpawnLocation = new(0,20,-25);
+    private float[] fovs = {20f,30f,60f,120f,140f};
+
 
     public float FoV = 140f;
     public int Change;
     public bool button = false;
 
-    private Color[] colourList = {Color.black,Color.blue,Color.green,Color.yellow};
+    private Color[] colourList = {Color.black,Color.blue,Color.green,Color.yellow,Color.red};
 
 
 
@@ -26,14 +30,19 @@ public class Master : MonoBehaviour
     private Heli heli;
     private Blocker blockerRight;
     private void SpawnGround(){
-
-        ground = Instantiate(groundPrefab,groundSpawnLocation,groundPrefab.transform.rotation);
+        if(ground == null){
+            ground = Instantiate(groundPrefab,groundSpawnLocation,groundPrefab.transform.rotation);
+        }
+        
         //ground.GetComponent<Renderer>().material.color = colourList[Random.Range(0,colourList.Length)];
     }
     private void SpawnHeli(){
-        heli = Instantiate(heliPrefab,heliSpawnLocation,heliPrefab.transform.rotation);
+        if(heli==null){
+            heli = Instantiate(heliPrefab,heliSpawnLocation,heliPrefab.transform.rotation);
+        }
+        
         heli.FoV = FoV;
-        string[] names = {"BlockerRight","BlockerLeft","BlockerFarRight","BlockerFarLeft"};
+        string[] names = {"BlockerRight","BlockerLeft"};
         foreach (var name in names){
         Transform partToHide = heli.transform.Find(name);
         partToHide.gameObject.SetActive(false);
@@ -61,12 +70,30 @@ public class Master : MonoBehaviour
         //SpawnBlocker();
         button = false;
     }
+    private void FoVCheck(Heli heli){
+        var heliPos = heli.transform.position;
+        for (int i = 0; i<fovs.Length;i++){
+            var fov = fovs[i] - 2;
+            var z = 10f;
+            var x = z* Mathf.Tan(fov/2 * Mathf.Deg2Rad);
+            Vector3 tempPos = heli.transform.position + heli.transform.rotation * new Vector3(x, 0, z);
+            Debug.Log($"fov {fov} x val {tempPos.x} {heliPos.z}");
+            var tempObject = Instantiate(marker,tempPos,heli.transform.rotation);
+            tempObject.GetComponent<Renderer>().material.color = colourList[i];
+
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        SpawnGround();
+        heli = FindAnyObjectByType<Heli>();
         SpawnHeli();
+        ground = FindAnyObjectByType<Ground>();
+        SpawnGround();
+        FoVCheck(heli);
+        
+        
         
     }
     void OnDestroy(){
@@ -79,9 +106,6 @@ public class Master : MonoBehaviour
     {
         if (button){
             ChangeFoV();
-        }
-        if (blockerRight !=null){
-            blockerRight.transform.rotation = heli.transform.rotation;
         }
         if(heli.kill){
             heli.GetComponent<Rigidbody>().velocity = new  Vector3(0.0f,0.0f,0.0f);

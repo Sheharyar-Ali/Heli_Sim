@@ -1,0 +1,16 @@
+{
+  "source": "Unity",
+  "applications": [
+    {
+      "app_key": "application.generated.unity.heli_sim.exe",
+      "launch_type": "url",
+      "url": "steam://launch/",
+      "action_manifest_path": "H:\\Desktop\\Thesis\\code\\Heli_Sim\\Assets\\StreamingAssets\\SteamVR\\actions.json",
+      "strings": {
+        "en_us": {
+          "name": "Heli_Sim [Testing]"
+        }
+      }
+    }
+  ]
+}
