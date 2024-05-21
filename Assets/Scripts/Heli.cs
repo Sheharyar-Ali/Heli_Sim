@@ -117,7 +117,7 @@ public class Heli : MonoBehaviour
     {
 
         string[] data = trainingFile.text.Split(new string[] { ",", "\n" }, StringSplitOptions.None);
-        int tableSize = data.Length / 2 - 1;
+        int tableSize = data.Length / 3 - 1;
         trainingFunc1 = new float[tableSize];
         trainingFunc2 = new float[tableSize];
         for (int i = 0; i < tableSize; i++)
@@ -149,7 +149,7 @@ public class Heli : MonoBehaviour
     {
         float elapsedTime = 0f;
         int index = 0;
-        while (elapsedTime < T_m)
+        while (elapsedTime < T_total)
         {
             float t = elapsedTime % dtPython / dtPython;
             float currentVelocity = Mathf.Lerp(forcingFunc[index], forcingFunc[(index + 1) % forcingFunc.Length], t);
@@ -170,7 +170,7 @@ public class Heli : MonoBehaviour
     {
         float elapsedTime = 0f;
         int index = 0;
-        while (elapsedTime < T_m)
+        while (elapsedTime < T_total)
         {
             float t = elapsedTime % dtPython / dtPython;
             float currentVelocity = Mathf.Lerp(trainingFunc1[index], trainingFunc1[(index + 1) % trainingFunc1.Length], t);
@@ -242,6 +242,8 @@ public class Heli : MonoBehaviour
         spawnLocation = new(0, 10, -25);
         transform.position = spawnLocation;
         transform.rotation = initialRotation;
+        controlVelocity= new  Vector3(0.0f,0.0f,0.0f);
+        ffVelocity =  new  Vector3(0.0f,0.0f,0.0f);
         GetData();
         GetTrainingData();
         T_total = T_m + 30;
