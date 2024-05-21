@@ -390,6 +390,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: trainingFile
+      value: 
+      objectReference: {fileID: 4900000, guid: e12fc6a5e2bf64f46a80ece5b50e43f6, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: trainingRunFile
+      value: 
+      objectReference: {fileID: 4900000, guid: e12fc6a5e2bf64f46a80ece5b50e43f6, type: 3}
     - target: {fileID: 8287347947689242137, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -399,9 +407,7 @@ PrefabInstance:
       value: 100
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 6019542383992119950, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
-    - {fileID: 6674147861735968384, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
@@ -437,8 +443,10 @@ MonoBehaviour:
   groundPrefab: {fileID: 6995697142379566250, guid: 80e5aeae6603a0546854acf18defd399, type: 3}
   heliPrefab: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
   blockerPrefab: {fileID: 9140370235033929153, guid: f0a765e996f6c0347a99f8d7606dca85, type: 3}
+  marker: {fileID: 879689947640302485, guid: 8d6275033d7e673458672bff8e51ab71, type: 3}
   groundSpawnLocation: {x: 0, y: 0, z: 0}
   heliSpawnLocation: {x: 0, y: 10, z: -25}
+  initialRotation: {x: 0, y: 0, z: 0, w: 0}
   FoV: 140
   Change: 0
   button: 0

@@ -13,7 +13,8 @@ public class Master : MonoBehaviour
     [SerializeField] GameObject marker;
 
     public Vector3 groundSpawnLocation = new(0,0,0);
-    public Vector3 heliSpawnLocation = new(0,20,-25);
+    public Vector3 heliSpawnLocation;
+    public Quaternion initialRotation;
     private float[] fovs = {20f,30f,60f,120f,140f};
 
 
@@ -42,11 +43,14 @@ public class Master : MonoBehaviour
         }
         
         heli.FoV = FoV;
+        initialRotation = heli.transform.rotation;
+        heli.initialRotation = initialRotation;
         string[] names = {"BlockerRight","BlockerLeft"};
         foreach (var name in names){
         Transform partToHide = heli.transform.Find(name);
         partToHide.gameObject.SetActive(false);
         }
+        heli.spawnLocation = heliSpawnLocation;
         
         
 
@@ -87,6 +91,7 @@ public class Master : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        heliSpawnLocation = new Vector3(0,10,-25);
         heli = FindAnyObjectByType<Heli>();
         SpawnHeli();
         ground = FindAnyObjectByType<Ground>();

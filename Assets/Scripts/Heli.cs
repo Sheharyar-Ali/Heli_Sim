@@ -13,7 +13,7 @@ public class Heli : MonoBehaviour
 {
 
     public float FoV;
-    
+
 
     public float baseFoV = 140f;
     public float vertFov = 100f;
@@ -21,9 +21,11 @@ public class Heli : MonoBehaviour
     // float horVerRatio = 1.839026278f;
 
     public TextAsset forcingFuncFile;
+    public TextAsset trainingFile;
 
     private float[] forcingFunc;
-    private float[] theta;
+    private float[] trainingFunc1;
+    private float[] trainingFunc2;
     private float dtPython = 0.1f;
     private float T_m = 120.0f;
     private float T_total;
@@ -52,30 +54,34 @@ public class Heli : MonoBehaviour
     public bool kill = false;
 
     private float beginTIme = 0f;
+    public Quaternion initialRotation;
+    public Vector3 spawnLocation;
+    private string indicator;
 
 
-    public float ConvertToHorFoV(float fov_wanted, Camera cam){
+    public float ConvertToHorFoV(float fov_wanted, Camera cam)
+    {
         float ratio = (fov_wanted / 2) / 57.29578f;
         var half_theta = Mathf.Atan(Mathf.Tan(ratio * Mathf.Deg2Rad) / cam.aspect);
-        return 2*half_theta * Mathf.Rad2Deg;
+        return 2 * half_theta * Mathf.Rad2Deg;
     }
 
     public void ChangeFoV(float fov)
     {
         var distance = GetComponent<Camera>().nearClipPlane + 0.5f;
 
-        
+
         // double length = (Math.Tan(Mathf.Deg2Rad * baseFoV / 2) - Math.Tan(Mathf.Deg2Rad * fov / 2)) * distance;
         Transform blockerRight = transform.Find("BlockerRight");
         double length = blockerRight.transform.localScale.x;
         Debug.Log("Length" + length + " " + distance);
         double pos_x = (Math.Tan(Mathf.Deg2Rad * fov / 2) * distance) + (length / 2);
         Debug.Log("pos_x" + pos_x);
-        
+
         Vector3 currentSize = blockerRight.transform.localScale;
         Vector3 currentPos = blockerRight.transform.localPosition;
         blockerRight.transform.localScale = new Vector3((float)length, currentSize.y + 4, currentSize.z);
-        blockerRight.transform.localPosition = transform.rotation * new Vector3((float)pos_x, currentPos.y, distance) ;
+        blockerRight.transform.localPosition = transform.rotation * new Vector3((float)pos_x, currentPos.y, distance);
 
         Transform blockerLeft = transform.Find("BlockerLeft");
         blockerLeft.transform.localScale = blockerRight.transform.localScale;
@@ -97,15 +103,29 @@ public class Heli : MonoBehaviour
     {
 
         string[] data = forcingFuncFile.text.Split(new string[] { ",", "\n" }, StringSplitOptions.None);
-        int tableSize = data.Length / 3 - 1;
+        int tableSize = data.Length / 2 - 1;
         forcingFunc = new float[tableSize];
-        theta = new float[tableSize];
+        for (int i = 0; i < tableSize; i++)
+        {
+            var value = float.Parse(data[2 * (i + 1) + 1], CultureInfo.InvariantCulture);
+            forcingFunc[i] = value;
+
+        }
+
+    }
+    private void GetTrainingData()
+    {
+
+        string[] data = trainingFile.text.Split(new string[] { ",", "\n" }, StringSplitOptions.None);
+        int tableSize = data.Length / 2 - 1;
+        trainingFunc1 = new float[tableSize];
+        trainingFunc2 = new float[tableSize];
         for (int i = 0; i < tableSize; i++)
         {
             var value = float.Parse(data[3 * (i + 1) + 1], CultureInfo.InvariantCulture);
-            forcingFunc[i] = value;
-            var angle = float.Parse(data[3 * (i + 1) + 2]) * Mathf.Rad2Deg;
-            theta[i] = angle;
+            trainingFunc1[i] = value;
+            var value2 = float.Parse(data[3 * (i + 1) + 2]) * Mathf.Rad2Deg;
+            trainingFunc2[i] = value2;
 
         }
 
@@ -144,6 +164,28 @@ public class Heli : MonoBehaviour
         recording = false;
         SaveToFile();
         kill = true;
+        Start();
+    }
+        IEnumerator Training()
+    {
+        float elapsedTime = 0f;
+        int index = 0;
+        while (elapsedTime < T_m)
+        {
+            float t = elapsedTime % dtPython / dtPython;
+            float currentVelocity = Mathf.Lerp(trainingFunc1[index], trainingFunc1[(index + 1) % trainingFunc1.Length], t);
+
+            ffVelocity = new Vector3(0.0f, 0.0f, currentVelocity);
+            yield return new WaitForSeconds(dtPython);
+
+            elapsedTime += dtPython;
+
+            index = (index + 1) % trainingFunc1.Length;
+        }
+        recording = false;
+        SaveToFile();
+        kill = true;
+        Start();
     }
 
     private float u_dot(float u, float theta)
@@ -165,10 +207,10 @@ public class Heli : MonoBehaviour
 
         foreach (var entry in exportData)
         {
-            sb.Append('\n').Append(entry.Time.ToString( CultureInfo.InvariantCulture)).Append(',').
-            Append(entry.controlVelocity.ToString( CultureInfo.InvariantCulture)).Append(',').
-            Append(entry.ffVelocity.ToString( CultureInfo.InvariantCulture)).Append(',').
-            Append(entry.controlInput.ToString( CultureInfo.InvariantCulture))
+            sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.controlVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.ffVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
             ;
         }
         return sb.ToString();
@@ -182,7 +224,7 @@ public class Heli : MonoBehaviour
         var filePath = "Assets/Scripts/export_";
 
 
-        using (var writer = new StreamWriter(filePath + currentFoV.ToString() + ".csv", false))
+        using (var writer = new StreamWriter(filePath + indicator + "_" + currentFoV.ToString() + ".csv", false))
         {
             writer.Write(content);
         }
@@ -190,20 +232,25 @@ public class Heli : MonoBehaviour
         // Or just
         //File.WriteAllText(content);
 
-        Debug.Log($"CSV file written to \"{filePath + currentFoV.ToString() + ".csv"}\"");
+        Debug.Log($"CSV file written to \"{filePath + indicator + "_" + currentFoV.ToString() + ".csv"}\"");
 
 
     }
     // Start is called before the first frame update
     void Start()
     {
+        spawnLocation = new(0, 10, -25);
+        transform.position = spawnLocation;
+        transform.rotation = initialRotation;
         GetData();
+        GetTrainingData();
         T_total = T_m + 30;
         currentFoV = baseFoV;
         currentPitch = transform.rotation.x;
         pushValue = Input.GetAxis("Vertical");
         float totalDataPoints = T_total / Time.deltaTime;
         exportData = new List<Data>((int)totalDataPoints);
+        kill = false;
         // exportData = new List<Data>((int) 10000);
 
     }
@@ -211,7 +258,7 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
         pushValue = Input.GetAxis("Vertical");
         var camera = GetComponent<Camera>();
         if (pushValue != 0 && !kill)
@@ -227,11 +274,11 @@ public class Heli : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Z))
         {
             ChangeFoV(20);
-            
+
         }
         else if (Input.GetKeyDown(KeyCode.X))
         {
-               
+
             ChangeFoV(30);
         }
         else if (Input.GetKeyDown(KeyCode.C))
@@ -251,7 +298,16 @@ public class Heli : MonoBehaviour
         {
             recording = true;
             beginTIme = Time.time;
+            indicator = "actual";
             StartCoroutine(ChangeVelocity());
+            //StartCoroutine(ChangePitch());
+        }
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            recording = true;
+            beginTIme = Time.time;
+            indicator = "training";
+            StartCoroutine(Training());
             //StartCoroutine(ChangePitch());
         }
         if (Input.GetKey(pitchDown))
