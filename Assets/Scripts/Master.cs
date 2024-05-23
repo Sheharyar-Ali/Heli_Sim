@@ -96,7 +96,7 @@ public class Master : MonoBehaviour
         SpawnHeli();
         ground = FindAnyObjectByType<Ground>();
         SpawnGround();
-        FoVCheck(heli);
+        //FoVCheck(heli);
         
         
         

@@ -57,6 +57,7 @@ public class Heli : MonoBehaviour
     public Quaternion initialRotation;
     public Vector3 spawnLocation;
     private string indicator;
+    public string id;
 
 
     public float ConvertToHorFoV(float fov_wanted, Camera cam)
@@ -224,7 +225,7 @@ public class Heli : MonoBehaviour
         var filePath = "Assets/Scripts/export_";
 
 
-        using (var writer = new StreamWriter(filePath + indicator + "_" + currentFoV.ToString() + ".csv", false))
+        using (var writer = new StreamWriter(filePath + id+ "_"+ indicator + "_" + currentFoV.ToString() + ".csv", false))
         {
             writer.Write(content);
         }
@@ -232,14 +233,14 @@ public class Heli : MonoBehaviour
         // Or just
         //File.WriteAllText(content);
 
-        Debug.Log($"CSV file written to \"{filePath + indicator + "_" + currentFoV.ToString() + ".csv"}\"");
+        Debug.Log($"CSV file written to \"{filePath + id+ "_"+ indicator + "_" + currentFoV.ToString() + ".csv"}\"");
 
 
     }
     // Start is called before the first frame update
     void Start()
     {
-        spawnLocation = new(0, 10, -25);
+        spawnLocation = new(0, 5, -25);
         transform.position = spawnLocation;
         transform.rotation = initialRotation;
         controlVelocity= new  Vector3(0.0f,0.0f,0.0f);
@@ -252,7 +253,7 @@ public class Heli : MonoBehaviour
         pushValue = Input.GetAxis("Vertical");
         float totalDataPoints = T_total / Time.deltaTime;
         exportData = new List<Data>((int)totalDataPoints);
-        kill = false;
+        
         // exportData = new List<Data>((int) 10000);
 
     }
@@ -263,7 +264,7 @@ public class Heli : MonoBehaviour
 
         pushValue = Input.GetAxis("Vertical");
         var camera = GetComponent<Camera>();
-        if (pushValue != 0 && !kill)
+        if (!kill)
         {
             angleWanted = pushValue * maxPitch / maxVal;
             transform.localEulerAngles = new Vector3(angleWanted, transform.localEulerAngles.y, transform.localEulerAngles.z);
@@ -301,6 +302,7 @@ public class Heli : MonoBehaviour
             recording = true;
             beginTIme = Time.time;
             indicator = "actual";
+            kill = false;
             StartCoroutine(ChangeVelocity());
             //StartCoroutine(ChangePitch());
         }
@@ -309,6 +311,7 @@ public class Heli : MonoBehaviour
             recording = true;
             beginTIme = Time.time;
             indicator = "training";
+            kill = false;
             StartCoroutine(Training());
             //StartCoroutine(ChangePitch());
         }
@@ -331,12 +334,13 @@ public class Heli : MonoBehaviour
         if (!kill)
         {
             GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
+            
         }
 
 
         if (recording)
         {
-            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted}");
+            //Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted}");
             AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted);
         }
 

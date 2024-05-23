@@ -275,9 +275,12 @@ MonoBehaviour:
   vertFov: 100
   currentFoV: 0
   forcingFuncFile: {fileID: 4900000, guid: 118cb73597b0e1644944c5f7767688b2, type: 3}
+  trainingFile: {fileID: 4900000, guid: e12fc6a5e2bf64f46a80ece5b50e43f6, type: 3}
   pushValue: 0
   pitchSpeed: 10
   kill: 0
+  initialRotation: {x: 0, y: 0, z: 0, w: 0}
+  spawnLocation: {x: 0, y: 0, z: 0}
 --- !u!54 &-2874155807769103190
 Rigidbody:
   m_ObjectHideFlags: 0
