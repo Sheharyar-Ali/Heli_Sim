@@ -34,7 +34,7 @@ public class Heli : MonoBehaviour
     public float pushValue;
     public float pitchSpeed = 1f;
     private float smoothTime = 0.1f;
-    private float maxPitch = 30f;
+    private float maxPitch = 15f;
     private float maxVal = 1;
     private float angleWanted;
     private float currentPitch;
@@ -253,6 +253,7 @@ public class Heli : MonoBehaviour
         pushValue = Input.GetAxis("Vertical");
         float totalDataPoints = T_total / Time.deltaTime;
         exportData = new List<Data>((int)totalDataPoints);
+        ChangeFoV(140);
         
         // exportData = new List<Data>((int) 10000);
 

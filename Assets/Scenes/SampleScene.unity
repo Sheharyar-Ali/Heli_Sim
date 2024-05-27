@@ -356,7 +356,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7237387146572987379, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 10
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7237387146572987379, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: m_LocalPosition.z
@@ -389,6 +389,10 @@ PrefabInstance:
     - target: {fileID: 7237387146572987379, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: id
+      value: sbinali_test
       objectReference: {fileID: 0}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: trainingRunFile
