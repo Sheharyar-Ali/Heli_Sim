@@ -268,11 +268,13 @@ public class Heli : MonoBehaviour
         if (!kill)
         {
             angleWanted = pushValue * maxPitch / maxVal;
-            transform.localEulerAngles = new Vector3(angleWanted, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            var thetaDot = angleWanted * M_theta1s;
+            var finalAngle = thetaDot * Time.deltaTime;
+            transform.localEulerAngles = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
             newPitch = GetPitch();
             currentPitch = newPitch;
-            Debug.Log($"value {pushValue} angle wanted {angleWanted} ");
+            Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
 
         }
         if (Input.GetKeyDown(KeyCode.Z))
