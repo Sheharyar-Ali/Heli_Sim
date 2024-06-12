@@ -38,6 +38,7 @@ public class Heli : MonoBehaviour
     private float maxVal = 1;
     private float angleWanted;
     private float currentPitch;
+    private float finalAngle;
     private float newPitch;
     private float currentAccel;
     private Vector3 controlVelocity;
@@ -269,12 +270,8 @@ public class Heli : MonoBehaviour
         {
             angleWanted = pushValue * maxPitch / maxVal;
             var thetaDot = angleWanted * M_theta1s;
-            var finalAngle = thetaDot * Time.deltaTime;
-            transform.localEulerAngles = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
-            //transform.Rotate(Vector3.right, smoothedPitchAngle);
-            newPitch = GetPitch();
-            currentPitch = newPitch;
-            Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+            finalAngle = thetaDot * Time.deltaTime;
+
 
         }
         if (Input.GetKeyDown(KeyCode.Z))
@@ -336,6 +333,15 @@ public class Heli : MonoBehaviour
         controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
         if (!kill)
         {
+            var currentEuler = transform.localEulerAngles;
+            var newEuler = currentEuler + new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            if(newEuler.x>180) newEuler.x-=360;
+            newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
+            transform.localEulerAngles = newEuler;
+            //transform.Rotate(Vector3.right, smoothedPitchAngle);
+            newPitch = GetPitch();
+            currentPitch = newPitch;
+            Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
             GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
             
         }
