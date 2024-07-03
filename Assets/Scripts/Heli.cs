@@ -34,7 +34,7 @@ public class Heli : MonoBehaviour
     public float pushValue;
     public float pitchSpeed = 1f;
     private float smoothTime = 0.1f;
-    private float maxPitch = 15f;
+    private float maxPitchRate = 5.0f;
     private float maxVal = 1;
     private float angleWanted;
     private float currentPitch;
@@ -263,12 +263,24 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKey(pitchDown))
+        {
+            pushValue = 1;
 
-        pushValue = Input.GetAxis("Vertical");
+        }
+        else if (Input.GetKey(pitchUp))
+        {
+            pushValue = -1;
+        }
+        else{
+            pushValue = 0 ;
+            pushValue = Input.GetAxis("Vertical");
+        }
+        
         var camera = GetComponent<Camera>();
         if (!kill)
         {
-            angleWanted = pushValue * maxPitch / maxVal;
+            angleWanted = pushValue * maxPitchRate / maxVal;
             var thetaDot = angleWanted * M_theta1s;
             finalAngle = thetaDot * Time.deltaTime;
 
@@ -315,19 +327,7 @@ public class Heli : MonoBehaviour
             StartCoroutine(Training());
             //StartCoroutine(ChangePitch());
         }
-        if (Input.GetKey(pitchDown))
-        {
-            transform.Rotate(Vector3.right, pitchSpeed * Time.deltaTime);
-            newPitch = GetPitch();
-            currentPitch = newPitch;
 
-        }
-        else if (Input.GetKey(pitchUp))
-        {
-            transform.Rotate(-Vector3.right, pitchSpeed * Time.deltaTime);
-            newPitch = GetPitch();
-            currentPitch = newPitch;
-        }
         currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
         //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
         controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
@@ -336,7 +336,7 @@ public class Heli : MonoBehaviour
             var currentEuler = transform.localEulerAngles;
             var newEuler = currentEuler + new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             if(newEuler.x>180) newEuler.x-=360;
-            newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
+            // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
             transform.localEulerAngles = newEuler;
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
             newPitch = GetPitch();
