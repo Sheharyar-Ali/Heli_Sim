@@ -29,8 +29,7 @@ public class Heli : MonoBehaviour
     private float dtPython = 0.1f;
     private float T_m = 120.0f;
     private float T_total;
-    private KeyCode pitchDown = KeyCode.UpArrow;
-    private KeyCode pitchUp = KeyCode.DownArrow;
+
     public float pushValue;
     public float pitchSpeed = 1f;
     private float smoothTime = 0.1f;
@@ -60,6 +59,19 @@ public class Heli : MonoBehaviour
     private string indicator;
     public string id;
 
+// Key mapping
+    private KeyCode pitchDown = KeyCode.UpArrow;
+    private KeyCode pitchUp = KeyCode.DownArrow;
+    private KeyCode reset = KeyCode.R;
+    private KeyCode startTraining = KeyCode.T;
+    private KeyCode startFF = KeyCode.Space;
+    private KeyCode FoV20 = KeyCode.Z;
+    private KeyCode FoV30 = KeyCode.X;
+    private KeyCode FoV60 = KeyCode.C;
+    private KeyCode FoV90 = KeyCode.V;
+    private KeyCode FoV120 = KeyCode.B;
+    private KeyCode FoV140 = KeyCode.N;
+    
 
     public float ConvertToHorFoV(float fov_wanted, Camera cam)
     {
@@ -263,6 +275,13 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(reset)){
+            Start();
+            StopAllCoroutines();
+            kill = false;
+
+            
+        }
         if (Input.GetKey(pitchDown))
         {
             pushValue = 1;
@@ -286,30 +305,33 @@ public class Heli : MonoBehaviour
 
 
         }
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (Input.GetKeyDown(FoV20))
         {
             ChangeFoV(20);
 
         }
-        else if (Input.GetKeyDown(KeyCode.X))
+        else if (Input.GetKeyDown(FoV30))
         {
 
             ChangeFoV(30);
         }
-        else if (Input.GetKeyDown(KeyCode.C))
+        else if (Input.GetKeyDown(FoV60))
         {
             ChangeFoV(60);
         }
-        else if (Input.GetKeyDown(KeyCode.V))
+        else if (Input.GetKeyDown(FoV90)){
+            ChangeFoV(90);
+        }
+        else if (Input.GetKeyDown(FoV120))
         {
             ChangeFoV(120);
         }
-        else if (Input.GetKeyDown(KeyCode.B))
+        else if (Input.GetKeyDown(FoV140))
         {
             ChangeFoV(140);
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(startFF))
         {
             recording = true;
             beginTIme = Time.time;
@@ -318,7 +340,7 @@ public class Heli : MonoBehaviour
             StartCoroutine(ChangeVelocity());
             //StartCoroutine(ChangePitch());
         }
-        if (Input.GetKeyDown(KeyCode.T))
+        if (Input.GetKeyDown(startTraining))
         {
             recording = true;
             beginTIme = Time.time;
