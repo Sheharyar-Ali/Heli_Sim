@@ -22,10 +22,12 @@ public class Heli : MonoBehaviour
 
     public TextAsset forcingFuncFile;
     public TextAsset trainingFile;
+    public TextAsset thetaFile;
 
     private float[] forcingFunc;
     private float[] trainingFunc1;
     private float[] trainingFunc2;
+    private float[] thetaForcingFunc;
     private float dtPython = 0.1f;
     private float T_m = 120.0f;
     private float T_total;
@@ -42,6 +44,7 @@ public class Heli : MonoBehaviour
     private float currentAccel;
     private Vector3 controlVelocity;
     private Vector3 ffVelocity;
+    private Vector3 ffTheta;
     private float Mu = 0.0468f;
     private float Mq = -1.8954f;
     private float M_theta1s = 26.4f;
@@ -52,6 +55,7 @@ public class Heli : MonoBehaviour
     private List<Data> exportData;
     bool recording = false;
     public bool kill = false;
+    public bool move = true;
 
     private float beginTIme = 0f;
     public Quaternion initialRotation;
@@ -65,6 +69,7 @@ public class Heli : MonoBehaviour
     private KeyCode reset = KeyCode.R;
     private KeyCode startTraining = KeyCode.T;
     private KeyCode startFF = KeyCode.Space;
+    private KeyCode startTheta = KeyCode.P;
     private KeyCode FoV20 = KeyCode.Z;
     private KeyCode FoV30 = KeyCode.X;
     private KeyCode FoV60 = KeyCode.C;
@@ -127,6 +132,17 @@ public class Heli : MonoBehaviour
         }
 
     }
+    private void GetThetaData(){
+        string[] data = thetaFile.text.Split(new string[] {",","\n"},StringSplitOptions.None);
+        int tableSize = data.Length /2 -1;
+        thetaForcingFunc = new float[tableSize];
+        for (int i =0; i<tableSize; i++)
+        {
+            var value = float.Parse(data[2 * (i + 1) + 1], CultureInfo.InvariantCulture);
+            thetaForcingFunc[i] = value;
+        }
+
+    }
     private void GetTrainingData()
     {
 
@@ -180,7 +196,28 @@ public class Heli : MonoBehaviour
         kill = true;
         Start();
     }
-        IEnumerator Training()
+    IEnumerator ChangeTheta(){
+        float elapsedTime = 0f;
+        int index = 0;
+        move = false;
+        while(elapsedTime < T_total){
+            float t = elapsedTime % dtPython / dtPython;
+            float currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
+            ffTheta = new Vector3(currentTheta, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            if(ffTheta.x>180) ffTheta.x-=360;
+            yield return new WaitForSeconds(dtPython);
+            elapsedTime += dtPython;
+            index = (index+1 ) % thetaForcingFunc.Length;
+        }
+        recording = false;
+        SaveToFile();
+        kill = true;
+        move = true;
+        Start();
+
+        
+    }
+    IEnumerator Training()
     {
         float elapsedTime = 0f;
         int index = 0;
@@ -260,6 +297,7 @@ public class Heli : MonoBehaviour
         ffVelocity =  new  Vector3(0.0f,0.0f,0.0f);
         GetData();
         GetTrainingData();
+        GetThetaData();
         T_total = T_m + 30;
         currentFoV = baseFoV;
         currentPitch = transform.rotation.x;
@@ -340,6 +378,14 @@ public class Heli : MonoBehaviour
             StartCoroutine(ChangeVelocity());
             //StartCoroutine(ChangePitch());
         }
+        if (Input.GetKeyDown(startTheta))
+        {
+            recording = true;
+            beginTIme = Time.time;
+            indicator = "theta";
+            kill = false;
+            StartCoroutine(ChangeTheta());
+        }
         if (Input.GetKeyDown(startTraining))
         {
             recording = true;
@@ -352,19 +398,24 @@ public class Heli : MonoBehaviour
 
         currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
         //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
-        controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
+
+        if(move){
+            controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
+        }
+        
         if (!kill)
         {
             var currentEuler = transform.localEulerAngles;
             var newEuler = currentEuler + new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             if(newEuler.x>180) newEuler.x-=360;
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
-            transform.localEulerAngles = newEuler;
+            transform.localEulerAngles = newEuler + ffTheta;
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
             newPitch = GetPitch();
             currentPitch = newPitch;
             Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
             GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
+            
             
         }
 
