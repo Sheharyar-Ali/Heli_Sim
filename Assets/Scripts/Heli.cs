@@ -162,6 +162,7 @@ public class Heli : MonoBehaviour
     }
     private float GetPitch()
     {
+        // if(ffTheta.x>180) ffTheta.x-=360;
         if (transform.rotation.eulerAngles.x > 180f)
         {
             Debug.Log($"Pitch: {360 - transform.rotation.eulerAngles.x} Rad {(360 - transform.rotation.eulerAngles.x) * Mathf.Deg2Rad}");
@@ -203,7 +204,8 @@ public class Heli : MonoBehaviour
         while(elapsedTime < T_total){
             float t = elapsedTime % dtPython / dtPython;
             float currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
-            ffTheta = new Vector3(currentTheta, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            ffTheta = new Vector3( currentTheta, 0, 0);
+            Debug.Log($"Actual: {ffTheta}");
             if(ffTheta.x>180) ffTheta.x-=360;
             yield return new WaitForSeconds(dtPython);
             elapsedTime += dtPython;
@@ -215,7 +217,6 @@ public class Heli : MonoBehaviour
         move = true;
         Start();
 
-        
     }
     IEnumerator Training()
     {
@@ -405,15 +406,24 @@ public class Heli : MonoBehaviour
         
         if (!kill)
         {
+            var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            if (move){
             var currentEuler = transform.localEulerAngles;
-            var newEuler = currentEuler + new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            var newEuler = currentEuler + controlTheta;
             if(newEuler.x>180) newEuler.x-=360;
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
-            transform.localEulerAngles = newEuler + ffTheta;
+            transform.localEulerAngles = newEuler;
+            }
+            else{
+                transform.localEulerAngles = controlTheta + ffTheta;
+                Debug.Log($"ff Theta {ffTheta} control theta {controlTheta}");
+            }
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
-            newPitch = GetPitch();
-            currentPitch = newPitch;
-            Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+            currentPitch = GetPitch();
+            if(move){
+                Debug.Log($"value {ffTheta} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+            }
+            
             GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
             
             
