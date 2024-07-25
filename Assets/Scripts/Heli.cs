@@ -45,6 +45,7 @@ public class Heli : MonoBehaviour
     private Vector3 controlVelocity;
     private Vector3 ffVelocity;
     private Vector3 ffTheta;
+    private float deltaTheta;
     private float Mu = 0.0468f;
     private float Mq = -1.8954f;
     private float M_theta1s = 26.4f;
@@ -62,6 +63,8 @@ public class Heli : MonoBehaviour
     public Vector3 spawnLocation;
     private string indicator;
     public string id;
+    int counterCR = 0;
+    int counterUp = 0;
 
 // Key mapping
     private KeyCode pitchDown = KeyCode.UpArrow;
@@ -165,12 +168,12 @@ public class Heli : MonoBehaviour
         // if(ffTheta.x>180) ffTheta.x-=360;
         if (transform.rotation.eulerAngles.x > 180f)
         {
-            Debug.Log($"Pitch: {360 - transform.rotation.eulerAngles.x} Rad {(360 - transform.rotation.eulerAngles.x) * Mathf.Deg2Rad}");
+            //Debug.Log($"Pitch: {360 - transform.rotation.eulerAngles.x} Rad {(360 - transform.rotation.eulerAngles.x) * Mathf.Deg2Rad}");
             return (360 - transform.rotation.eulerAngles.x) * Mathf.Deg2Rad;
         }
         else
         {
-            Debug.Log($"Pitch: {-transform.rotation.eulerAngles.x} Rad {(-transform.rotation.eulerAngles.x) * Mathf.Deg2Rad}");
+            //Debug.Log($"Pitch: {-transform.rotation.eulerAngles.x} Rad {(-transform.rotation.eulerAngles.x) * Mathf.Deg2Rad}");
             return (-transform.rotation.eulerAngles.x) * Mathf.Deg2Rad;
         }
 
@@ -180,17 +183,23 @@ public class Heli : MonoBehaviour
     {
         float elapsedTime = 0f;
         int index = 0;
+        float beginTime = Time.time;
         while (elapsedTime < T_total)
         {
             float t = elapsedTime % dtPython / dtPython;
             float currentVelocity = Mathf.Lerp(forcingFunc[index], forcingFunc[(index + 1) % forcingFunc.Length], t);
 
             ffVelocity = new Vector3(0.0f, 0.0f, currentVelocity);
-            yield return new WaitForSeconds(dtPython);
+        float targetTime = beginTime + elapsedTime + dtPython;
+        while (Time.time < targetTime)
+        {
+            yield return null;
+        }
 
-            elapsedTime += dtPython;
+        elapsedTime += dtPython;
 
-            index = (index + 1) % forcingFunc.Length;
+        index = (index + 1) % forcingFunc.Length;
+        Debug.Log($"elapsed time {elapsedTime} actual {Time.time - beginTIme} diff {Time.time - beginTIme -elapsedTime}");
         }
         recording = false;
         SaveToFile();
@@ -200,14 +209,23 @@ public class Heli : MonoBehaviour
     IEnumerator ChangeTheta(){
         float elapsedTime = 0f;
         int index = 0;
+        var beginTime = Time.time;
         move = false;
         while(elapsedTime < T_total){
             float t = elapsedTime % dtPython / dtPython;
             float currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
-            ffTheta = new Vector3( currentTheta, 0, 0);
-            Debug.Log($"Actual: {ffTheta}");
-            if(ffTheta.x>180) ffTheta.x-=360;
-            yield return new WaitForSeconds(dtPython);
+            deltaTheta = currentTheta - (index > 0 ? thetaForcingFunc[index - 1] : 0);
+
+            ffTheta = new Vector3( deltaTheta, 0, 0);
+            // Debug.Log($"Actual: {currentTheta}, Delta: {deltaTheta}");
+            counterCR+=1;
+            // if(ffTheta.x>180) ffTheta.x-=360;
+        float targetTime = beginTime + elapsedTime + dtPython;
+        while (Time.time < targetTime)
+        {
+            yield return null;
+        }
+            
             elapsedTime += dtPython;
             index = (index+1 ) % thetaForcingFunc.Length;
         }
@@ -222,13 +240,18 @@ public class Heli : MonoBehaviour
     {
         float elapsedTime = 0f;
         int index = 0;
+        var beginTime = Time.time;
         while (elapsedTime < T_total)
         {
             float t = elapsedTime % dtPython / dtPython;
             float currentVelocity = Mathf.Lerp(trainingFunc1[index], trainingFunc1[(index + 1) % trainingFunc1.Length], t);
 
             ffVelocity = new Vector3(0.0f, 0.0f, currentVelocity);
-            yield return new WaitForSeconds(dtPython);
+        float targetTime = beginTime + elapsedTime + dtPython;
+        while (Time.time < targetTime)
+        {
+            yield return null;
+        }
 
             elapsedTime += dtPython;
 
@@ -317,32 +340,7 @@ public class Heli : MonoBehaviour
         if (Input.GetKeyDown(reset)){
             Start();
             StopAllCoroutines();
-            kill = false;
-
-            
-        }
-        if (Input.GetKey(pitchDown))
-        {
-            pushValue = 1;
-
-        }
-        else if (Input.GetKey(pitchUp))
-        {
-            pushValue = -1;
-        }
-        else{
-            pushValue = 0 ;
-            pushValue = Input.GetAxis("Vertical");
-        }
-        
-        var camera = GetComponent<Camera>();
-        if (!kill)
-        {
-            angleWanted = pushValue * maxPitchRate / maxVal;
-            var thetaDot = angleWanted * M_theta1s;
-            finalAngle = thetaDot * Time.deltaTime;
-
-
+            kill = false;  
         }
         if (Input.GetKeyDown(FoV20))
         {
@@ -395,8 +393,27 @@ public class Heli : MonoBehaviour
             kill = false;
             StartCoroutine(Training());
             //StartCoroutine(ChangePitch());
-        }
+        }        
+        if (Input.GetKey(pitchDown))
+        {
+            pushValue = 1;
 
+        }
+        else if (Input.GetKey(pitchUp))
+        {
+            pushValue = -1;
+        }
+        else{
+            pushValue = 0 ;
+            pushValue = Input.GetAxis("Vertical");
+        }
+        
+        if (!kill)
+        {
+            angleWanted = pushValue * maxPitchRate / maxVal;
+            var thetaDot = angleWanted * M_theta1s;
+            finalAngle = thetaDot * Time.deltaTime;
+        }
         currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
         //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
 
@@ -407,24 +424,25 @@ public class Heli : MonoBehaviour
         if (!kill)
         {
             var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
-            if (move){
             var currentEuler = transform.localEulerAngles;
             var newEuler = currentEuler + controlTheta;
             if(newEuler.x>180) newEuler.x-=360;
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
+            if(!move){
+                newEuler += ffTheta;
+                ffTheta.x = 0;
+                counterUp+= 1;
+            }
             transform.localEulerAngles = newEuler;
-            }
-            else{
-                transform.localEulerAngles = controlTheta + ffTheta;
-                Debug.Log($"ff Theta {ffTheta} control theta {controlTheta}");
-            }
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
-            currentPitch = GetPitch();
-            if(move){
-                Debug.Log($"value {ffTheta} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
-            }
+            newPitch = GetPitch();
+            currentPitch = newPitch;
+            // if(move){
+            //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+            // }
             
             GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
+
             
             
         }
