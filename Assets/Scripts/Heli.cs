@@ -43,6 +43,7 @@ public class Heli : MonoBehaviour
     private float newPitch;
     private float currentAccel;
     private Vector3 controlVelocity;
+    float currentTheta;
     private Vector3 ffVelocity;
     private Vector3 ffTheta;
     private float deltaTheta;
@@ -213,11 +214,10 @@ public class Heli : MonoBehaviour
         move = false;
         while(elapsedTime < T_total){
             float t = elapsedTime % dtPython / dtPython;
-            float currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
+            currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
             deltaTheta = currentTheta - (index > 0 ? thetaForcingFunc[index - 1] : 0);
-
-            ffTheta = new Vector3( deltaTheta, 0, 0);
-            // Debug.Log($"Actual: {currentTheta}, Delta: {deltaTheta}");
+            if(currentTheta>180) currentTheta-=360;
+            ffTheta = new Vector3( -deltaTheta, 0, 0);
             counterCR+=1;
             // if(ffTheta.x>180) ffTheta.x-=360;
         float targetTime = beginTime + elapsedTime + dtPython;
@@ -230,7 +230,7 @@ public class Heli : MonoBehaviour
             index = (index+1 ) % thetaForcingFunc.Length;
         }
         recording = false;
-        SaveToFile();
+        SaveToFile("theta");
         kill = true;
         move = true;
         Start();
@@ -270,33 +270,40 @@ public class Heli : MonoBehaviour
         return u_dot;
     }
 
-    private void AddData(float time, float controlvelocity, float ffvelocity, float controlinput)
+    private void AddData(float time, float controlvelocity, float ffvelocity, float controlinput, float fftheta, float controltheta)
     {
-        exportData.Add(new Data(time: time, controlvelocity: controlvelocity, ffvelocity: ffvelocity, controlinput: controlinput));
+        exportData.Add(new Data(time: time, controlvelocity: controlvelocity, ffvelocity: ffvelocity, controlinput: controlinput, fftheta: fftheta, controltheta: controltheta));
 
     }
 
-    private string ToCsv()
+    private string ToCsv(string signifier = "v")
     {
         var sb = new StringBuilder("Time,CV,FF,Input");
 
         foreach (var entry in exportData)
         {
+            if(signifier == "v")
             sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.ffVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
             ;
+            else
+            sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.controlTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.ffTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
+            ;
         }
         return sb.ToString();
     }
-    public void SaveToFile()
+    public void SaveToFile(string signifier ="v")
     {
         // Use the CSV generation from before
-        var content = ToCsv();
+        var content = ToCsv(signifier);
 
 
-        var filePath = "Assets/Scripts/export_";
+        var filePath = "Assets/Scripts/Data/export_";
 
 
         using (var writer = new StreamWriter(filePath + id+ "_"+ indicator + "_" + currentFoV.ToString() + ".csv", false))
@@ -426,14 +433,18 @@ public class Heli : MonoBehaviour
             var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             var currentEuler = transform.localEulerAngles;
             var newEuler = currentEuler + controlTheta;
-            if(newEuler.x>180) newEuler.x-=360;
+            
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
             if(!move){
                 newEuler += ffTheta;
                 ffTheta.x = 0;
                 counterUp+= 1;
             }
-            transform.localEulerAngles = newEuler;
+            if(newEuler.x>180) newEuler.x-=360;
+            // transform.localEulerAngles = newEuler;
+            transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+            if(!move) Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Pitch saved: {finalAngle * Mathf.Rad2Deg}");
+            
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
             newPitch = GetPitch();
             currentPitch = newPitch;
@@ -451,7 +462,7 @@ public class Heli : MonoBehaviour
         if (recording)
         {
             //Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted}");
-            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted);
+            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, finalAngle * Mathf.Rad2Deg);
         }
 
 
