@@ -23,6 +23,9 @@ public class Heli : MonoBehaviour
     public TextAsset forcingFuncFile;
     public TextAsset trainingFile;
     public TextAsset thetaFile;
+    [SerializeField] GameObject Marker;
+    private GameObject marker;
+    private float markerDist = 5;
 
     private float[] forcingFunc;
     private float[] trainingFunc1;
@@ -41,6 +44,7 @@ public class Heli : MonoBehaviour
     private float currentPitch;
     private float finalAngle;
     private float newPitch;
+    private Vector3 newEuler;
     private float currentAccel;
     private Vector3 controlVelocity;
     float currentTheta;
@@ -82,6 +86,13 @@ public class Heli : MonoBehaviour
     private KeyCode FoV140 = KeyCode.N;
     
 
+
+    private void SpawnMarker(){
+        var markerPos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z +markerDist);
+        if (marker == null){
+            marker = Instantiate(Marker, markerPos,transform.rotation);
+        }
+    }
     public float ConvertToHorFoV(float fov_wanted, Camera cam)
     {
         float ratio = (fov_wanted / 2) / 57.29578f;
@@ -278,7 +289,10 @@ public class Heli : MonoBehaviour
 
     private string ToCsv(string signifier = "v")
     {
-        var sb = new StringBuilder("Time,CV,FF,Input");
+        StringBuilder sb;
+        if(signifier == "v"){sb = new StringBuilder("Time,CV,FF,Input");}
+        else
+        sb = new StringBuilder("Time,CT,FF,Input");
 
         foreach (var entry in exportData)
         {
@@ -321,6 +335,7 @@ public class Heli : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        recording = false;
         spawnLocation = new(0, 5, -25);
         transform.position = spawnLocation;
         transform.rotation = initialRotation;
@@ -336,6 +351,9 @@ public class Heli : MonoBehaviour
         float totalDataPoints = T_total / Time.deltaTime;
         exportData = new List<Data>((int)totalDataPoints);
         ChangeFoV(140);
+        if (marker !=null){
+            Destroy(marker);
+        }
         
         // exportData = new List<Data>((int) 10000);
 
@@ -344,7 +362,7 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(reset)){
+        if (Input.GetKeyDown(reset) || Input.GetKeyDown(KeyCode.JoystickButton1)){
             Start();
             StopAllCoroutines();
             kill = false;  
@@ -375,7 +393,7 @@ public class Heli : MonoBehaviour
             ChangeFoV(140);
         }
 
-        if (Input.GetKeyDown(startFF))
+        if (Input.GetKeyDown(startFF) || Input.GetKeyDown(KeyCode.JoystickButton0))
         {
             recording = true;
             beginTIme = Time.time;
@@ -384,13 +402,15 @@ public class Heli : MonoBehaviour
             StartCoroutine(ChangeVelocity());
             //StartCoroutine(ChangePitch());
         }
-        if (Input.GetKeyDown(startTheta))
+        if (Input.GetKeyDown(startTheta) || Input.GetKeyDown(KeyCode.JoystickButton3))
         {
             recording = true;
             beginTIme = Time.time;
             indicator = "theta";
             kill = false;
+            SpawnMarker();
             StartCoroutine(ChangeTheta());
+            
         }
         if (Input.GetKeyDown(startTraining))
         {
@@ -399,7 +419,6 @@ public class Heli : MonoBehaviour
             indicator = "training";
             kill = false;
             StartCoroutine(Training());
-            //StartCoroutine(ChangePitch());
         }        
         if (Input.GetKey(pitchDown))
         {
@@ -432,7 +451,7 @@ public class Heli : MonoBehaviour
         {
             var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             var currentEuler = transform.localEulerAngles;
-            var newEuler = currentEuler + controlTheta;
+            newEuler = currentEuler + controlTheta;
             
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
             if(!move){
@@ -443,7 +462,25 @@ public class Heli : MonoBehaviour
             if(newEuler.x>180) newEuler.x-=360;
             // transform.localEulerAngles = newEuler;
             transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
-            if(!move) Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Pitch saved: {finalAngle * Mathf.Rad2Deg}");
+            var check = transform.eulerAngles.x;
+            if(check>180) check-=360;
+            if (check<-80){
+                transform.rotation = Quaternion.Euler(-80, newEuler.y, newEuler.z);
+            }
+            else if(check >80){
+                transform.rotation = Quaternion.Euler(80, newEuler.y, newEuler.z);
+            }
+            
+            if(marker !=null){
+                marker.transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+                var actualTheta = transform.eulerAngles.x;
+                if(actualTheta>180){actualTheta -=360;}
+                actualTheta = actualTheta * Mathf.Deg2Rad;
+                var newZ = Mathf.Cos(actualTheta) * markerDist;
+                var newY = Mathf.Tan(actualTheta) * newZ;
+                marker.transform.position = new Vector3(0,5 - newY,transform.position.z + newZ);
+                Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Cube: {actualTheta}");
+            }
             
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
             newPitch = GetPitch();
@@ -462,7 +499,7 @@ public class Heli : MonoBehaviour
         if (recording)
         {
             //Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted}");
-            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, finalAngle * Mathf.Rad2Deg);
+            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, newEuler.x);
         }
 
 

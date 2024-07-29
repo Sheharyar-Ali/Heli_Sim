@@ -395,6 +395,10 @@ PrefabInstance:
       value: sbinali_test
       objectReference: {fileID: 0}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: Marker
+      value: 
+      objectReference: {fileID: 1998542921969869917, guid: 322ef9eec0e55044884db02542ed2035, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: thetaFile
       value: 
       objectReference: {fileID: 4900000, guid: c7f75c6e740ceef4b841accc3905bda2, type: 3}
