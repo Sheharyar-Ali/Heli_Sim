@@ -222,7 +222,7 @@ public class Heli : MonoBehaviour
         float elapsedTime = 0f;
         int index = 0;
         var beginTime = Time.time;
-        move = false;
+        
         while(elapsedTime < T_total){
             float t = elapsedTime % dtPython / dtPython;
             currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
@@ -318,6 +318,8 @@ public class Heli : MonoBehaviour
 
 
         var filePath = "Assets/Scripts/Data/export_";
+        id += DateTime.Now.ToString();
+        
 
 
         using (var writer = new StreamWriter(filePath + id+ "_"+ indicator + "_" + currentFoV.ToString() + ".csv", false))
@@ -336,6 +338,7 @@ public class Heli : MonoBehaviour
     void Start()
     {
         recording = false;
+        move = true;
         spawnLocation = new(0, 5, -25);
         transform.position = spawnLocation;
         transform.rotation = initialRotation;
@@ -397,9 +400,15 @@ public class Heli : MonoBehaviour
         {
             recording = true;
             beginTIme = Time.time;
-            indicator = "actual";
             kill = false;
-            StartCoroutine(ChangeVelocity());
+            if(move){
+                indicator = "actual";
+                StartCoroutine(ChangeVelocity());
+            }
+            else{
+                StartCoroutine(ChangeTheta());
+            }
+            
             //StartCoroutine(ChangePitch());
         }
         if (Input.GetKeyDown(startTheta) || Input.GetKeyDown(KeyCode.JoystickButton3))
@@ -409,7 +418,8 @@ public class Heli : MonoBehaviour
             indicator = "theta";
             kill = false;
             SpawnMarker();
-            StartCoroutine(ChangeTheta());
+            move = false;
+            //
             
         }
         if (Input.GetKeyDown(startTraining))
