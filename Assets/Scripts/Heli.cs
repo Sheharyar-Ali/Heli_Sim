@@ -45,6 +45,7 @@ public class Heli : MonoBehaviour
     private float finalAngle;
     private float newPitch;
     private Vector3 newEuler;
+    private Vector3 newEulerControlOnly;
     private float currentAccel;
     private Vector3 controlVelocity;
     float currentTheta;
@@ -296,18 +297,18 @@ public class Heli : MonoBehaviour
 
         foreach (var entry in exportData)
         {
-            if(signifier == "v")
+            if(signifier == "v"){
             sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.ffVelocity.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
-            ;
-            else
+            ;}
+            else{
             sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.ffTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
-            ;
+            ;}
         }
         return sb.ToString();
     }
@@ -318,7 +319,7 @@ public class Heli : MonoBehaviour
 
 
         var filePath = "Assets/Scripts/Data/export_";
-        id += DateTime.Now.ToString();
+        id += Time.time.ToString();
         
 
 
@@ -413,7 +414,6 @@ public class Heli : MonoBehaviour
         }
         if (Input.GetKeyDown(startTheta) || Input.GetKeyDown(KeyCode.JoystickButton3))
         {
-            recording = true;
             beginTIme = Time.time;
             indicator = "theta";
             kill = false;
@@ -462,9 +462,10 @@ public class Heli : MonoBehaviour
             var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
             var currentEuler = transform.localEulerAngles;
             newEuler = currentEuler + controlTheta;
-            
+            newEulerControlOnly = currentEuler + controlTheta;
             // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
             if(!move){
+                
                 newEuler += ffTheta;
                 ffTheta.x = 0;
                 counterUp+= 1;
@@ -508,8 +509,8 @@ public class Heli : MonoBehaviour
 
         if (recording)
         {
-            //Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted}");
-            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, newEuler.x);
+            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CTPT {newEulerControlOnly.x}FFT {currentTheta} ");
+            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, finalAngle);
         }
 
 
