@@ -226,7 +226,8 @@ public class Heli : MonoBehaviour
         
         while(elapsedTime < T_total){
             float t = elapsedTime % dtPython / dtPython;
-            currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
+            //currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
+            currentTheta = thetaForcingFunc[index];
             deltaTheta = currentTheta - (index > 0 ? thetaForcingFunc[index - 1] : 0);
             if(currentTheta>180) currentTheta-=360;
             ffTheta = new Vector3( -deltaTheta, 0, 0);
@@ -282,9 +283,15 @@ public class Heli : MonoBehaviour
         return u_dot;
     }
 
-    private void AddData(float time, float controlvelocity, float ffvelocity, float controlinput, float fftheta, float controltheta)
+    private void AddData(float time, float controlvelocity, float ffvelocity, float controlinput, float fftheta, float controltheta,float currentPitch)
     {
-        exportData.Add(new Data(time: time, controlvelocity: controlvelocity, ffvelocity: ffvelocity, controlinput: controlinput, fftheta: fftheta, controltheta: controltheta));
+        exportData.Add(new Data(time: time, 
+                                controlvelocity: controlvelocity, 
+                                ffvelocity: ffvelocity, 
+                                controlinput: controlinput, 
+                                fftheta: fftheta, 
+                                controltheta: controltheta,
+                                currentpitch:currentPitch));
 
     }
 
@@ -293,7 +300,7 @@ public class Heli : MonoBehaviour
         StringBuilder sb;
         if(signifier == "v"){sb = new StringBuilder("Time,CV,FF,Input");}
         else
-        sb = new StringBuilder("Time,CT,FF,Input");
+        sb = new StringBuilder("Time,CT,FF,Input,Pitch");
 
         foreach (var entry in exportData)
         {
@@ -307,7 +314,8 @@ public class Heli : MonoBehaviour
             sb.Append('\n').Append(entry.Time.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.controlTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
             Append(entry.ffTheta.ToString(CultureInfo.InvariantCulture)).Append(',').
-            Append(entry.controlInput.ToString(CultureInfo.InvariantCulture))
+            Append(entry.controlInput.ToString(CultureInfo.InvariantCulture)).Append(',').
+            Append(entry.currentPitch.ToString(CultureInfo.InvariantCulture))
             ;}
         }
         return sb.ToString();
@@ -467,10 +475,10 @@ public class Heli : MonoBehaviour
             if(!move){
                 
                 newEuler += ffTheta;
-                ffTheta.x = 0;
+                
                 counterUp+= 1;
             }
-            if(newEuler.x>180) newEuler.x-=360;
+            //if(newEuler.x>180) newEuler.x-=360;
             // transform.localEulerAngles = newEuler;
             transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
             var check = transform.eulerAngles.x;
@@ -494,8 +502,7 @@ public class Heli : MonoBehaviour
             }
             
             //transform.Rotate(Vector3.right, smoothedPitchAngle);
-            newPitch = GetPitch();
-            currentPitch = newPitch;
+
             // if(move){
             //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
             // }
@@ -509,10 +516,13 @@ public class Heli : MonoBehaviour
 
         if (recording)
         {
-            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CTPT {newEulerControlOnly.x}FFT {currentTheta} ");
-            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, currentTheta, finalAngle);
+            
+            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CP {currentPitch*Mathf.Rad2Deg} FFT {ffTheta.x} ");
+            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, ffTheta.x, finalAngle,currentPitch*Mathf.Rad2Deg);
         }
-
+        newPitch = GetPitch();
+        currentPitch = newPitch;
+        ffTheta.x = 0;
 
     }
     public void OnDestroy()
