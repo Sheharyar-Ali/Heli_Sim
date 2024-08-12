@@ -336,8 +336,6 @@ public class Heli : MonoBehaviour
             writer.Write(content);
         }
 
-        // Or just
-        //File.WriteAllText(content);
 
         Debug.Log($"CSV file written to \"{filePath + id+ "_"+ indicator + "_" + currentFoV.ToString() + ".csv"}\"");
 
