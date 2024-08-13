@@ -372,7 +372,7 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(reset) || Input.GetKeyDown(KeyCode.JoystickButton1)){
+        if (Input.GetKeyDown(reset) ){
             Start();
             StopAllCoroutines();
             kill = false;  
@@ -403,7 +403,7 @@ public class Heli : MonoBehaviour
             ChangeFoV(140);
         }
 
-        if (Input.GetKeyDown(startFF) || Input.GetKeyDown(KeyCode.JoystickButton0))
+        if (Input.GetKeyDown(startFF))
         {
             recording = true;
             beginTIme = Time.time;
@@ -418,7 +418,7 @@ public class Heli : MonoBehaviour
             
             //StartCoroutine(ChangePitch());
         }
-        if (Input.GetKeyDown(startTheta) || Input.GetKeyDown(KeyCode.JoystickButton3))
+        if (Input.GetKeyDown(startTheta) )
         {
             beginTIme = Time.time;
             indicator = "theta";
