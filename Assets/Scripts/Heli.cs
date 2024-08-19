@@ -31,14 +31,13 @@ public class Heli : MonoBehaviour
     private float[] trainingFunc1;
     private float[] trainingFunc2;
     private float[] thetaForcingFunc;
-    private float dtPython = 0.1f;
+    private float dtPython = 0.01f;
     private float T_m = 120.0f;
     private float T_total;
 
     public float pushValue;
     public float pitchSpeed = 1f;
-    private float smoothTime = 0.1f;
-    private float maxPitchRate = 5.0f;
+    private float maxPitchRate = 3.0f;
     private float maxVal = 1;
     private float angleWanted;
     private float currentPitch;
@@ -206,7 +205,7 @@ public class Heli : MonoBehaviour
         float targetTime = beginTime + elapsedTime + dtPython;
         while (Time.time < targetTime)
         {
-            yield return null;
+            yield return new WaitForSeconds(dtPython);
         }
 
         elapsedTime += dtPython;
@@ -223,9 +222,11 @@ public class Heli : MonoBehaviour
         float elapsedTime = 0f;
         int index = 0;
         var beginTime = Time.time;
-        
+        var timePassed= Time.time;
+        float targetTime;
         while(elapsedTime < T_total){
-            float t = elapsedTime % dtPython / dtPython;
+            //float t = elapsedTime % dtPython / dtPython;
+            float t = (Time.time - timePassed) /dtPython;
             //currentTheta = Mathf.Lerp(thetaForcingFunc[index], thetaForcingFunc[(index+1) % thetaForcingFunc.Length],t);
             currentTheta = thetaForcingFunc[index];
             deltaTheta = currentTheta - (index > 0 ? thetaForcingFunc[index - 1] : 0);
@@ -233,14 +234,16 @@ public class Heli : MonoBehaviour
             ffTheta = new Vector3( -deltaTheta, 0, 0);
             counterCR+=1;
             // if(ffTheta.x>180) ffTheta.x-=360;
-        float targetTime = beginTime + elapsedTime + dtPython;
+        targetTime = beginTime + elapsedTime + dtPython;
         while (Time.time < targetTime)
         {
-            yield return null;
+            yield return new WaitForSeconds(dtPython);
         }
+        
             
-            elapsedTime += dtPython;
-            index = (index+1 ) % thetaForcingFunc.Length;
+        elapsedTime += dtPython;
+        index = (index+1 ) % thetaForcingFunc.Length;
+        timePassed = Time.time;
         }
         recording = false;
         SaveToFile("theta");
@@ -274,6 +277,93 @@ public class Heli : MonoBehaviour
         SaveToFile();
         kill = true;
         Start();
+    }
+    IEnumerator Dynamics(){
+        while(true){
+        if (Input.GetKey(pitchDown))
+        {
+            pushValue = 1;
+
+        }
+        else if (Input.GetKey(pitchUp))
+        {
+            pushValue = -1;
+        }
+        else{
+            pushValue = 0 ;
+            pushValue = Input.GetAxis("Vertical");
+        }
+        if (!kill)
+        {
+            angleWanted = pushValue * maxPitchRate / maxVal;
+            var thetaDot = angleWanted * M_theta1s;
+            finalAngle = thetaDot * dtPython;
+        }
+        currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
+        //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
+
+        if(move){
+            controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * dtPython);
+        }
+        
+        if (!kill)
+        {
+            var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            var currentEuler = transform.localEulerAngles;
+            newEuler = currentEuler + controlTheta;
+            newEulerControlOnly = currentEuler + controlTheta;
+            // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
+            if(!move){
+                
+                newEuler += ffTheta;
+                
+                counterUp+= 1;
+            }
+            //if(newEuler.x>180) newEuler.x-=360;
+            // transform.localEulerAngles = newEuler;
+            transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+            var check = transform.eulerAngles.x;
+            if(check>180) check-=360;
+            if (check<-80){
+                transform.rotation = Quaternion.Euler(-80, newEuler.y, newEuler.z);
+            }
+            else if(check >80){
+                transform.rotation = Quaternion.Euler(80, newEuler.y, newEuler.z);
+            }
+            
+            if(marker !=null){
+                marker.transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+                var actualTheta = transform.eulerAngles.x;
+                if(actualTheta>180){actualTheta -=360;}
+                actualTheta = actualTheta * Mathf.Deg2Rad;
+                var newZ = Mathf.Cos(actualTheta) * markerDist;
+                var newY = Mathf.Tan(actualTheta) * newZ;
+                marker.transform.position = new Vector3(0,5 - newY,transform.position.z + newZ);
+                Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Cube: {actualTheta}");
+            }
+            
+            //transform.Rotate(Vector3.right, smoothedPitchAngle);
+
+            // if(move){
+            //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+            // }
+            
+            GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
+
+            
+            
+        }
+        if (recording)
+        {
+            
+            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CP {currentPitch*Mathf.Rad2Deg} FFT {ffTheta.x} ");
+            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, ffTheta.x, finalAngle,currentPitch*Mathf.Rad2Deg);
+        }
+        newPitch = GetPitch();
+        currentPitch = newPitch;
+        ffTheta.x = 0;
+        yield return new WaitForSeconds(dtPython);
+        }
     }
 
     private float u_dot(float u, float theta)
@@ -341,6 +431,7 @@ public class Heli : MonoBehaviour
 
 
     }
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -364,6 +455,7 @@ public class Heli : MonoBehaviour
         if (marker !=null){
             Destroy(marker);
         }
+        StartCoroutine(Dynamics());
         
         // exportData = new List<Data>((int) 10000);
 
@@ -373,8 +465,9 @@ public class Heli : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(reset) ){
-            Start();
+            
             StopAllCoroutines();
+            Start();
             kill = false;  
         }
         if (Input.GetKeyDown(FoV20))
@@ -436,91 +529,91 @@ public class Heli : MonoBehaviour
             kill = false;
             StartCoroutine(Training());
         }        
-        if (Input.GetKey(pitchDown))
-        {
-            pushValue = 1;
+        // if (Input.GetKey(pitchDown))
+        // {
+        //     pushValue = 1;
 
-        }
-        else if (Input.GetKey(pitchUp))
-        {
-            pushValue = -1;
-        }
-        else{
-            pushValue = 0 ;
-            pushValue = Input.GetAxis("Vertical");
-        }
+        // }
+        // else if (Input.GetKey(pitchUp))
+        // {
+        //     pushValue = -1;
+        // }
+        // else{
+        //     pushValue = 0 ;
+        //     pushValue = Input.GetAxis("Vertical");
+        // }
         
-        if (!kill)
-        {
-            angleWanted = pushValue * maxPitchRate / maxVal;
-            var thetaDot = angleWanted * M_theta1s;
-            finalAngle = thetaDot * Time.deltaTime;
-        }
-        currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
-        //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
+        // if (!kill)
+        // {
+        //     angleWanted = pushValue * maxPitchRate / maxVal;
+        //     var thetaDot = angleWanted * M_theta1s;
+        //     finalAngle = thetaDot * Time.deltaTime;
+        // }
+        // currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
+        // //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
 
-        if(move){
-            controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
-        }
+        // if(move){
+        //     controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
+        // }
         
-        if (!kill)
-        {
-            var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
-            var currentEuler = transform.localEulerAngles;
-            newEuler = currentEuler + controlTheta;
-            newEulerControlOnly = currentEuler + controlTheta;
-            // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
-            if(!move){
+        // if (!kill)
+        // {
+        //     var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        //     var currentEuler = transform.localEulerAngles;
+        //     newEuler = currentEuler + controlTheta;
+        //     newEulerControlOnly = currentEuler + controlTheta;
+        //     // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
+        //     if(!move){
                 
-                newEuler += ffTheta;
+        //         newEuler += ffTheta;
                 
-                counterUp+= 1;
-            }
-            //if(newEuler.x>180) newEuler.x-=360;
-            // transform.localEulerAngles = newEuler;
-            transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
-            var check = transform.eulerAngles.x;
-            if(check>180) check-=360;
-            if (check<-80){
-                transform.rotation = Quaternion.Euler(-80, newEuler.y, newEuler.z);
-            }
-            else if(check >80){
-                transform.rotation = Quaternion.Euler(80, newEuler.y, newEuler.z);
-            }
+        //         counterUp+= 1;
+        //     }
+        //     //if(newEuler.x>180) newEuler.x-=360;
+        //     // transform.localEulerAngles = newEuler;
+        //     transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+        //     var check = transform.eulerAngles.x;
+        //     if(check>180) check-=360;
+        //     if (check<-80){
+        //         transform.rotation = Quaternion.Euler(-80, newEuler.y, newEuler.z);
+        //     }
+        //     else if(check >80){
+        //         transform.rotation = Quaternion.Euler(80, newEuler.y, newEuler.z);
+        //     }
             
-            if(marker !=null){
-                marker.transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
-                var actualTheta = transform.eulerAngles.x;
-                if(actualTheta>180){actualTheta -=360;}
-                actualTheta = actualTheta * Mathf.Deg2Rad;
-                var newZ = Mathf.Cos(actualTheta) * markerDist;
-                var newY = Mathf.Tan(actualTheta) * newZ;
-                marker.transform.position = new Vector3(0,5 - newY,transform.position.z + newZ);
-                Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Cube: {actualTheta}");
-            }
+        //     if(marker !=null){
+        //         marker.transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
+        //         var actualTheta = transform.eulerAngles.x;
+        //         if(actualTheta>180){actualTheta -=360;}
+        //         actualTheta = actualTheta * Mathf.Deg2Rad;
+        //         var newZ = Mathf.Cos(actualTheta) * markerDist;
+        //         var newY = Mathf.Tan(actualTheta) * newZ;
+        //         marker.transform.position = new Vector3(0,5 - newY,transform.position.z + newZ);
+        //         Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Cube: {actualTheta}");
+        //     }
             
-            //transform.Rotate(Vector3.right, smoothedPitchAngle);
+        //     //transform.Rotate(Vector3.right, smoothedPitchAngle);
 
-            // if(move){
-            //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
-            // }
+        //     // if(move){
+        //     //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
+        //     // }
             
-            GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
+        //     GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
 
             
             
-        }
+        // }
 
 
-        if (recording)
-        {
+        // if (recording)
+        // {
             
-            Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CP {currentPitch*Mathf.Rad2Deg} FFT {ffTheta.x} ");
-            AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, ffTheta.x, finalAngle,currentPitch*Mathf.Rad2Deg);
-        }
-        newPitch = GetPitch();
-        currentPitch = newPitch;
-        ffTheta.x = 0;
+        //     Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CP {currentPitch*Mathf.Rad2Deg} FFT {ffTheta.x} ");
+        //     AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, ffTheta.x, finalAngle,currentPitch*Mathf.Rad2Deg);
+        // }
+        // newPitch = GetPitch();
+        // currentPitch = newPitch;
+        // ffTheta.x = 0;
 
     }
     public void OnDestroy()
