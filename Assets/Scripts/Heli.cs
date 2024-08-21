@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
 using UnityEditor.Media;
 using UnityEngine;
@@ -25,7 +26,11 @@ public class Heli : MonoBehaviour
     public TextAsset thetaFile;
     [SerializeField] GameObject Marker;
     private GameObject marker;
+    [SerializeField] Sprite MiseryScale;
+    [SerializeField] GameObject MiseryScalePrefab;
+    private GameObject miseryScale;
     private float markerDist = 5;
+    private float scaleDist = 2;
 
     private float[] forcingFunc;
     private float[] trainingFunc1;
@@ -33,6 +38,7 @@ public class Heli : MonoBehaviour
     private float[] thetaForcingFunc;
     private float dtPython = 0.01f;
     private float T_m = 120.0f;
+    private float T_leadIn = 30.0f;
     private float T_total;
 
     public float pushValue;
@@ -91,6 +97,18 @@ public class Heli : MonoBehaviour
         var markerPos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z +markerDist);
         if (marker == null){
             marker = Instantiate(Marker, markerPos,transform.rotation);
+        }
+    }
+    private void SpawnScale(){
+        Debug.Log("Triggered function");
+        var scalePos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist);
+        if (miseryScale == null){
+            miseryScale = Instantiate(MiseryScalePrefab,scalePos,transform.rotation);
+            SpriteRenderer spriteRenderer = miseryScale.GetComponent<SpriteRenderer>();
+            spriteRenderer.sprite = MiseryScale;
+            spriteRenderer.transform.position = scalePos;
+            Debug.Log($" {scaleDist} {this.transform.position.z}");
+            
         }
     }
     public float ConvertToHorFoV(float fov_wanted, Camera cam)
@@ -217,6 +235,7 @@ public class Heli : MonoBehaviour
         SaveToFile();
         kill = true;
         Start();
+        SpawnScale();
     }
     IEnumerator ChangeTheta(){
         float elapsedTime = 0f;
@@ -250,6 +269,7 @@ public class Heli : MonoBehaviour
         kill = true;
         move = true;
         Start();
+        SpawnScale();
 
     }
     IEnumerator Training()
@@ -266,7 +286,7 @@ public class Heli : MonoBehaviour
         float targetTime = beginTime + elapsedTime + dtPython;
         while (Time.time < targetTime)
         {
-            yield return null;
+            yield return new WaitForSeconds(dtPython);
         }
 
             elapsedTime += dtPython;
@@ -277,6 +297,7 @@ public class Heli : MonoBehaviour
         SaveToFile();
         kill = true;
         Start();
+        SpawnScale();
     }
     IEnumerator Dynamics(){
         while(true){
@@ -445,7 +466,7 @@ public class Heli : MonoBehaviour
         GetData();
         GetTrainingData();
         GetThetaData();
-        T_total = T_m + 30;
+        T_total = T_m + T_leadIn;
         currentFoV = baseFoV;
         currentPitch = transform.rotation.x;
         pushValue = Input.GetAxis("Vertical");
@@ -464,10 +485,16 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.H)){
+            SpawnScale();
+        }
         if (Input.GetKeyDown(reset) ){
             
             StopAllCoroutines();
             Start();
+            if(miseryScale != null){
+                Destroy(miseryScale);
+            }                  
             kill = false;  
         }
         if (Input.GetKeyDown(FoV20))
@@ -508,6 +535,9 @@ public class Heli : MonoBehaviour
             else{
                 StartCoroutine(ChangeTheta());
             }
+            if(miseryScale != null){
+                Destroy(miseryScale);
+            }
             
             //StartCoroutine(ChangePitch());
         }
@@ -518,6 +548,9 @@ public class Heli : MonoBehaviour
             kill = false;
             SpawnMarker();
             move = false;
+            if(miseryScale != null){
+                Destroy(miseryScale);
+            }            
             //
             
         }
@@ -527,93 +560,11 @@ public class Heli : MonoBehaviour
             beginTIme = Time.time;
             indicator = "training";
             kill = false;
+            if(miseryScale != null){
+                Destroy(miseryScale);
+            }            
             StartCoroutine(Training());
         }        
-        // if (Input.GetKey(pitchDown))
-        // {
-        //     pushValue = 1;
-
-        // }
-        // else if (Input.GetKey(pitchUp))
-        // {
-        //     pushValue = -1;
-        // }
-        // else{
-        //     pushValue = 0 ;
-        //     pushValue = Input.GetAxis("Vertical");
-        // }
-        
-        // if (!kill)
-        // {
-        //     angleWanted = pushValue * maxPitchRate / maxVal;
-        //     var thetaDot = angleWanted * M_theta1s;
-        //     finalAngle = thetaDot * Time.deltaTime;
-        // }
-        // currentAccel = u_dot(u: controlVelocity.z, theta: currentPitch);
-        // //Debug.Log($"pitch {currentPitch * Mathf.Rad2Deg} u  {GetComponent<Rigidbody>().velocity.z} accel {currentAccel} dt {Time.deltaTime} velocity {controlVelocity.z}");
-
-        // if(move){
-        //     controlVelocity += new Vector3(0.0f, 0.0f, currentAccel * Time.deltaTime);
-        // }
-        
-        // if (!kill)
-        // {
-        //     var controlTheta = new Vector3(finalAngle, transform.localEulerAngles.y, transform.localEulerAngles.z);
-        //     var currentEuler = transform.localEulerAngles;
-        //     newEuler = currentEuler + controlTheta;
-        //     newEulerControlOnly = currentEuler + controlTheta;
-        //     // newEuler.x= Mathf.Clamp(newEuler.x,-maxPitch,maxPitch);
-        //     if(!move){
-                
-        //         newEuler += ffTheta;
-                
-        //         counterUp+= 1;
-        //     }
-        //     //if(newEuler.x>180) newEuler.x-=360;
-        //     // transform.localEulerAngles = newEuler;
-        //     transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
-        //     var check = transform.eulerAngles.x;
-        //     if(check>180) check-=360;
-        //     if (check<-80){
-        //         transform.rotation = Quaternion.Euler(-80, newEuler.y, newEuler.z);
-        //     }
-        //     else if(check >80){
-        //         transform.rotation = Quaternion.Euler(80, newEuler.y, newEuler.z);
-        //     }
-            
-        //     if(marker !=null){
-        //         marker.transform.rotation = Quaternion.Euler(newEuler.x, newEuler.y, newEuler.z);
-        //         var actualTheta = transform.eulerAngles.x;
-        //         if(actualTheta>180){actualTheta -=360;}
-        //         actualTheta = actualTheta * Mathf.Deg2Rad;
-        //         var newZ = Mathf.Cos(actualTheta) * markerDist;
-        //         var newY = Mathf.Tan(actualTheta) * newZ;
-        //         marker.transform.position = new Vector3(0,5 - newY,transform.position.z + newZ);
-        //         Debug.Log($"current orientation {transform.localEulerAngles.x} Actual: {currentTheta}, Cube: {actualTheta}");
-        //     }
-            
-        //     //transform.Rotate(Vector3.right, smoothedPitchAngle);
-
-        //     // if(move){
-        //     //     Debug.Log($"value {pushValue} angle wanted {angleWanted} final angle {finalAngle} dt {Time.deltaTime}");
-        //     // }
-            
-        //     GetComponent<Rigidbody>().velocity = controlVelocity + ffVelocity;
-
-            
-            
-        // }
-
-
-        // if (recording)
-        // {
-            
-        //     Debug.Log($"Time: {Time.time - beginTIme} CV {controlVelocity.z} FF{ffVelocity.z} PV {angleWanted} CT {finalAngle} CP {currentPitch*Mathf.Rad2Deg} FFT {ffTheta.x} ");
-        //     AddData(Time.time - beginTIme, controlVelocity.z, ffVelocity.z, angleWanted, ffTheta.x, finalAngle,currentPitch*Mathf.Rad2Deg);
-        // }
-        // newPitch = GetPitch();
-        // currentPitch = newPitch;
-        // ffTheta.x = 0;
 
     }
     public void OnDestroy()
