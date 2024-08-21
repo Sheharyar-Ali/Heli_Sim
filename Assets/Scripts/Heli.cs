@@ -29,6 +29,9 @@ public class Heli : MonoBehaviour
     [SerializeField] Sprite MiseryScale;
     [SerializeField] GameObject MiseryScalePrefab;
     private GameObject miseryScale;
+
+    [SerializeField] GameObject EasterEgg;
+    private GameObject easterEgg;
     private float markerDist = 5;
     private float scaleDist = 2;
 
@@ -110,6 +113,19 @@ public class Heli : MonoBehaviour
             Debug.Log($" {scaleDist} {this.transform.position.z}");
             
         }
+    }
+    IEnumerator SpawnEasterEgg(){
+        int randVal = UnityEngine.Random.Range(0,1);
+        if (randVal == 0){
+            var scaleImg = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist);
+            if (easterEgg == null){
+                easterEgg = Instantiate(EasterEgg,scaleImg,transform.rotation);
+            }
+            yield return new WaitForSeconds(0.3f);
+            Destroy(easterEgg);
+
+        }
+
     }
     public float ConvertToHorFoV(float fov_wanted, Camera cam)
     {
@@ -486,7 +502,8 @@ public class Heli : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.H)){
-            SpawnScale();
+            //SpawnScale();
+            StartCoroutine(SpawnEasterEgg());
         }
         if (Input.GetKeyDown(reset) ){
             
