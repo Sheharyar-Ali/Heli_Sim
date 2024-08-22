@@ -33,7 +33,7 @@ public class Heli : MonoBehaviour
     [SerializeField] GameObject EasterEgg;
     private GameObject easterEgg;
     private float markerDist = 5;
-    private float scaleDist = 2;
+    private float scaleDist = 5;
 
     private float[] forcingFunc;
     private float[] trainingFunc1;
@@ -103,21 +103,21 @@ public class Heli : MonoBehaviour
         }
     }
     private void SpawnScale(){
-        Debug.Log("Triggered function");
         var scalePos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist);
         if (miseryScale == null){
             miseryScale = Instantiate(MiseryScalePrefab,scalePos,transform.rotation);
             SpriteRenderer spriteRenderer = miseryScale.GetComponent<SpriteRenderer>();
             spriteRenderer.sprite = MiseryScale;
             spriteRenderer.transform.position = scalePos;
-            Debug.Log($" {scaleDist} {this.transform.position.z}");
+            
             
         }
     }
     IEnumerator SpawnEasterEgg(){
-        int randVal = UnityEngine.Random.Range(0,1);
+        int randVal = UnityEngine.Random.Range(0,30);
         if (randVal == 0){
-            var scaleImg = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist);
+            Debug.Log("BOO!");
+            var scaleImg = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist-2);
             if (easterEgg == null){
                 easterEgg = Instantiate(EasterEgg,scaleImg,transform.rotation);
             }
@@ -251,6 +251,7 @@ public class Heli : MonoBehaviour
         SaveToFile();
         kill = true;
         Start();
+        StartCoroutine(SpawnEasterEgg());
         SpawnScale();
     }
     IEnumerator ChangeTheta(){
@@ -285,6 +286,7 @@ public class Heli : MonoBehaviour
         kill = true;
         move = true;
         Start();
+        StartCoroutine(SpawnEasterEgg());
         SpawnScale();
 
     }
@@ -313,6 +315,7 @@ public class Heli : MonoBehaviour
         SaveToFile();
         kill = true;
         Start();
+        StartCoroutine(SpawnEasterEgg());
         SpawnScale();
     }
     IEnumerator Dynamics(){
@@ -452,8 +455,9 @@ public class Heli : MonoBehaviour
         // Use the CSV generation from before
         var content = ToCsv(signifier);
 
-
-        var filePath = "Assets/Scripts/Data/export_";
+        
+        var filePath = Path.Combine(Application.streamingAssetsPath, "Data/export_");
+        // var filePath = "Assets/Scripts/Data/export_";
         id += Time.time.ToString();
         
 
@@ -502,8 +506,8 @@ public class Heli : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.H)){
-            //SpawnScale();
-            StartCoroutine(SpawnEasterEgg());
+            SpawnScale();
+            //StartCoroutine(SpawnEasterEgg());
         }
         if (Input.GetKeyDown(reset) ){
             

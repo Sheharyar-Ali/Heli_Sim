@@ -392,12 +392,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: id
-      value: test
+      value: ilah
       objectReference: {fileID: 0}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: Marker
       value: 
       objectReference: {fileID: 1998542921969869917, guid: 322ef9eec0e55044884db02542ed2035, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: EasterEgg
+      value: 
+      objectReference: {fileID: 3257893763024886105, guid: fc6aa98715bd782408bc31e0c6a4cb5a, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: thetaFile
       value: 
@@ -410,6 +414,10 @@ PrefabInstance:
       propertyPath: trainingRunFile
       value: 
       objectReference: {fileID: 4900000, guid: e12fc6a5e2bf64f46a80ece5b50e43f6, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: MiseryScalePrefab
+      value: 
+      objectReference: {fileID: 6370502734249264211, guid: 630e1cda897f1364f967c7660dc2854b, type: 3}
     - target: {fileID: 8287347947689242137, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: m_Enabled
       value: 1
