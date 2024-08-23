@@ -33,7 +33,7 @@ public class Heli : MonoBehaviour
     [SerializeField] GameObject EasterEgg;
     private GameObject easterEgg;
     private float markerDist = 5;
-    private float scaleDist = 5;
+    private float scaleDist = 8;
 
     private float[] forcingFunc;
     private float[] trainingFunc1;
