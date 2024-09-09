@@ -26,6 +26,9 @@ public class Heli : MonoBehaviour
     public TextAsset thetaFile;
     [SerializeField] GameObject Marker;
     private GameObject marker;
+
+    [SerializeField] GameObject Horizon;
+    private GameObject horizon;
     [SerializeField] Sprite MiseryScale;
     [SerializeField] GameObject MiseryScalePrefab;
     private GameObject miseryScale;
@@ -98,8 +101,10 @@ public class Heli : MonoBehaviour
 
     private void SpawnMarker(){
         var markerPos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z +markerDist);
+        var horizonPos = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + 44);
         if (marker == null){
             marker = Instantiate(Marker, markerPos,transform.rotation);
+            horizon = Instantiate(Horizon,horizonPos,transform.rotation);
         }
     }
     private void SpawnScale(){
@@ -115,7 +120,7 @@ public class Heli : MonoBehaviour
     }
     IEnumerator SpawnEasterEgg(){
         int randVal = UnityEngine.Random.Range(0,30);
-        if (randVal == 0){
+        if (randVal == 31){
             Debug.Log("BOO!");
             var scaleImg = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist-2);
             if (easterEgg == null){
@@ -495,6 +500,9 @@ public class Heli : MonoBehaviour
         ChangeFoV(140);
         if (marker !=null){
             Destroy(marker);
+        }
+        if (horizon !=null){
+            Destroy(horizon);
         }
         StartCoroutine(Dynamics());
         
