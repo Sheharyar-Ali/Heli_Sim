@@ -63,7 +63,7 @@ public class Heli : MonoBehaviour
     private Vector3 ffVelocity;
     private Vector3 ffTheta;
     private float deltaTheta;
-    private float Mu = 0.0468f;
+    // private float Mu = 0.0468f;
     private float Mq = -1.8954f;
     private float M_theta1s = 26.4f;
     private float g = 9.80665f;
@@ -120,8 +120,8 @@ public class Heli : MonoBehaviour
     }
     IEnumerator SpawnEasterEgg(){
         int randVal = UnityEngine.Random.Range(0,30);
-        if (randVal == 31){
-            Debug.Log("BOO!");
+        if (randVal == 0){
+            Debug.LogWarning("BOO!");
             var scaleImg = new Vector3(transform.localPosition.x,transform.localPosition.y,transform.localPosition.z + scaleDist-2);
             if (easterEgg == null){
                 easterEgg = Instantiate(EasterEgg,scaleImg,transform.rotation);
