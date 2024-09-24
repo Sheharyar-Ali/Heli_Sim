@@ -395,6 +395,10 @@ PrefabInstance:
       value: leam
       objectReference: {fileID: 0}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: Arrow
+      value: 
+      objectReference: {fileID: 6236547954700128914, guid: b8b236c83e227714599893e0faab8cb3, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: Marker
       value: 
       objectReference: {fileID: 1998542921969869917, guid: 322ef9eec0e55044884db02542ed2035, type: 3}
@@ -407,6 +411,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3257893763024886105, guid: fc6aa98715bd782408bc31e0c6a4cb5a, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: pointFile
+      value: 
+      objectReference: {fileID: 4900000, guid: 255de080c51c0c8439dd6c5ea26e39d7, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: scaleDist
       value: 8
       objectReference: {fileID: 0}
@@ -418,6 +426,14 @@ PrefabInstance:
       propertyPath: MiseryScale
       value: 
       objectReference: {fileID: 21300000, guid: 51f405bd71810f64687d1ba3944396ff, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: MotionPoint
+      value: 
+      objectReference: {fileID: 8410410099471399567, guid: 37cdb97517ddfe5479c76c298f38de61, type: 3}
+    - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
+      propertyPath: newPointFile
+      value: 
+      objectReference: {fileID: 4900000, guid: bded6c2277642c144a2350c5506f0ef5, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: trainingRunFile
       value: 

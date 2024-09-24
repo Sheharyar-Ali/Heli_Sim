@@ -24,6 +24,8 @@ public class Heli : MonoBehaviour
     public TextAsset forcingFuncFile;
     public TextAsset trainingFile;
     public TextAsset thetaFile;
+    public TextAsset pointFile;
+    public TextAsset newPointFile;
     [SerializeField] GameObject Marker;
     private GameObject marker;
 
@@ -35,6 +37,11 @@ public class Heli : MonoBehaviour
 
     [SerializeField] GameObject EasterEgg;
     private GameObject easterEgg;
+    [SerializeField] GameObject MotionPoint;
+    private GameObject[] motionPoints;
+    private GameObject[] movedMotionPoints;
+    [SerializeField] GameObject Arrow;
+    private GameObject[] arrow;
     private float markerDist = 5;
     public float scaleDist = 5;
 
@@ -42,6 +49,12 @@ public class Heli : MonoBehaviour
     private float[] trainingFunc1;
     private float[] trainingFunc2;
     private float[] thetaForcingFunc;
+    private float[] xOrg;
+    private float[] yOrg;
+    private float[] zOrg;
+    private float[] xNew;
+    private float[] yNew;
+    private float[] zNew;
     private float dtPython = 0.01f;
     private float T_m = 120.0f;
     private float T_leadIn = 30.0f;
@@ -90,6 +103,7 @@ public class Heli : MonoBehaviour
     private KeyCode startTraining = KeyCode.T;
     private KeyCode startFF = KeyCode.Space;
     private KeyCode startTheta = KeyCode.P;
+    private KeyCode showMISCScale = KeyCode.H;
     private KeyCode FoV20 = KeyCode.Z;
     private KeyCode FoV30 = KeyCode.X;
     private KeyCode FoV60 = KeyCode.C;
@@ -116,6 +130,42 @@ public class Heli : MonoBehaviour
             spriteRenderer.transform.position = scalePos;
             
             
+        }
+    }
+    private void SpawnPoints(){
+        motionPoints = new GameObject[xOrg.Length];
+        for (int i =0; i< xOrg.Length;i++){
+            var pointPos = new Vector3(xOrg[i],yOrg[i]+0.5f,zOrg[i]);
+            motionPoints[i] = Instantiate(MotionPoint,pointPos,transform.rotation);
+        }
+    }
+    private void SpawnNewPoints(){
+        movedMotionPoints = new GameObject[xNew.Length];
+        for (int i =0; i< xNew.Length;i++){
+            var pointPos = new Vector3(xNew[i],yNew[i]+0.5f,zNew[i]);
+            movedMotionPoints[i] = Instantiate(MotionPoint,pointPos,transform.rotation);
+            movedMotionPoints[i].GetComponent<Renderer>().material.color = Color.red;
+        }  
+    }
+    private void SpawnArrows(){
+        arrow = new GameObject[xNew.Length];
+        for(int i =0; i<xNew.Length;i++){
+            var distDiff = new Vector3(xNew[i] - xOrg[i] , yNew[i] - yOrg[i] , zNew[i] - zOrg[i]);
+            var yScaling = distDiff.magnitude / 3.451f;
+            var yPos = yOrg[i] + (0.76f * yScaling);
+            var Pos = new Vector3(xOrg[i],yPos+0.5f,zOrg[i]);
+            var xRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (yNew[i] - yOrg[i])) * Mathf.Rad2Deg;
+            var yRotation = Mathf.Atan((xNew[i] - xOrg[i]) / (zNew[i] - zOrg[i])) * Mathf.Rad2Deg;
+            arrow[i] = Instantiate(Arrow,Pos,transform.rotation);
+            if(yScaling>0.2){
+                arrow[i].transform.localScale = new Vector3(0.2f,yScaling,0.2f);
+            }
+            else{
+                arrow[i].transform.localScale = new Vector3(yScaling,yScaling,yScaling);
+            }
+            
+            arrow[i].transform.rotation = Quaternion.Euler(xRotation,yRotation,transform.rotation.z);
+
         }
     }
     IEnumerator SpawnEasterEgg(){
@@ -213,6 +263,37 @@ public class Heli : MonoBehaviour
 
         }
 
+    }
+    private void GetPointData(){
+        string[] data = pointFile.text.Split(new string[] {",", "\n"},StringSplitOptions.None);
+        int tableSize = data.Length / 4 -1;
+        xOrg = new float[tableSize];
+        yOrg = new float[tableSize];
+        zOrg = new float[tableSize];
+        for (int i=0;i<tableSize; i++){
+            var value = float.Parse(data[4 * (i+1) + 1],CultureInfo.InvariantCulture);
+            xOrg[i] = value;
+            var value2 = float.Parse(data[4 * (i+1) + 2],CultureInfo.InvariantCulture);
+            yOrg[i] = value2;
+            var value3 = float.Parse(data[4 * (i+1) + 3],CultureInfo.InvariantCulture);
+            zOrg[i] = value3;
+        }
+
+    }
+    private void GetNewPointData(){
+        string[] data = newPointFile.text.Split(new string[] {",", "\n"},StringSplitOptions.None);
+        int tableSize = data.Length / 4 -1;
+        xNew = new float[tableSize];
+        yNew = new float[tableSize];
+        zNew = new float[tableSize];
+        for (int i=0;i<tableSize; i++){
+            var value = float.Parse(data[4 * (i+1) + 1],CultureInfo.InvariantCulture);
+            xNew[i] = value;
+            var value2 = float.Parse(data[4 * (i+1) + 2],CultureInfo.InvariantCulture);
+            yNew[i] = value2;
+            var value3 = float.Parse(data[4 * (i+1) + 3],CultureInfo.InvariantCulture);
+            zNew[i] = value3;
+        }
     }
     private float GetPitch()
     {
@@ -491,6 +572,7 @@ public class Heli : MonoBehaviour
         GetData();
         GetTrainingData();
         GetThetaData();
+        GetPointData();
         T_total = T_m + T_leadIn;
         currentFoV = baseFoV;
         currentPitch = transform.rotation.x;
@@ -513,7 +595,14 @@ public class Heli : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.H)){
+        if (Input.GetKeyDown(KeyCode.A)){
+            transform.position = new Vector3(0,5,0);
+            //SpawnPoints();
+            GetNewPointData();
+            //SpawnNewPoints();
+            SpawnArrows();
+        }
+        if (Input.GetKeyDown(showMISCScale)){
             SpawnScale();
             //StartCoroutine(SpawnEasterEgg());
         }
