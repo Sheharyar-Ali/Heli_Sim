@@ -25,7 +25,6 @@ public class Heli : MonoBehaviour
     public TextAsset trainingFile;
     public TextAsset thetaFile;
     public TextAsset pointFile;
-    public TextAsset newPointFile;
     [SerializeField] GameObject Marker;
     private GameObject marker;
 
@@ -40,8 +39,8 @@ public class Heli : MonoBehaviour
     [SerializeField] GameObject MotionPoint;
     private GameObject[] motionPoints;
     private GameObject[] movedMotionPoints;
-    [SerializeField] GameObject Arrow;
-    private GameObject[] arrow;
+    [SerializeField] Arrow Arrow;
+    private Arrow[] arrow;
     private float markerDist = 5;
     public float scaleDist = 5;
 
@@ -144,11 +143,11 @@ public class Heli : MonoBehaviour
         for (int i =0; i< xNew.Length;i++){
             var pointPos = new Vector3(xNew[i],yNew[i]+0.5f,zNew[i]);
             movedMotionPoints[i] = Instantiate(MotionPoint,pointPos,transform.rotation);
-            movedMotionPoints[i].GetComponent<Renderer>().material.color = Color.red;
+            movedMotionPoints[i].GetComponent<Renderer>().material.color = Color.yellow;
         }  
     }
     private void SpawnArrows(){
-        arrow = new GameObject[xNew.Length];
+        arrow = new Arrow[xNew.Length];
         for(int i =0; i<xNew.Length;i++){
             var distDiff = new Vector3(xNew[i] - xOrg[i] , yNew[i] - yOrg[i] , zNew[i] - zOrg[i]);
             var yScaling = distDiff.magnitude / 3.451f;
@@ -167,6 +166,27 @@ public class Heli : MonoBehaviour
             arrow[i].transform.rotation = Quaternion.Euler(xRotation,yRotation,transform.rotation.z);
 
         }
+        
+    }
+    private IEnumerator ScreenCap(){
+        // double[] files = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
+        string[] files = {"coordsNew0.5","coordsNew1","coordsNew1.5","coordsNew2","coordsNew2.5","coordsNew3","coordsNew3.5","coordsNew4"};
+        foreach (string num in files){
+            Debug.Log(num);
+            string picName = "Assets/Scripts/Images/Flow" + num.ToString() + ".png";
+            transform.position = new Vector3(0,5,0);
+            GetPointData();
+            //SpawnPoints();
+            GetNewPointData(num);
+            //SpawnNewPoints();
+            SpawnArrows();
+            ScreenCapture.CaptureScreenshot(picName);
+            yield return new WaitForSeconds(5);
+            for (int i =0; i<arrow.Count<Arrow>(); i++){
+                Destroy(arrow[i].gameObject);
+            }  
+        }
+        
     }
     IEnumerator SpawnEasterEgg(){
         int randVal = UnityEngine.Random.Range(0,30);
@@ -280,7 +300,8 @@ public class Heli : MonoBehaviour
         }
 
     }
-    private void GetNewPointData(){
+    private void GetNewPointData(string fileName){
+        TextAsset newPointFile = Resources.Load<TextAsset>(fileName);
         string[] data = newPointFile.text.Split(new string[] {",", "\n"},StringSplitOptions.None);
         int tableSize = data.Length / 4 -1;
         xNew = new float[tableSize];
@@ -596,23 +617,23 @@ public class Heli : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.A)){
-            transform.position = new Vector3(0,5,0);
-            //SpawnPoints();
-            GetNewPointData();
-            //SpawnNewPoints();
-            SpawnArrows();
+            StartCoroutine(ScreenCap());
         }
         if (Input.GetKeyDown(showMISCScale)){
             SpawnScale();
             //StartCoroutine(SpawnEasterEgg());
         }
         if (Input.GetKeyDown(reset) ){
-            
+            for (int i =0; i<arrow.Count<Arrow>(); i++){
+                Destroy(arrow[i].gameObject);
+            }  
             StopAllCoroutines();
             Start();
             if(miseryScale != null){
                 Destroy(miseryScale);
-            }                  
+            }
+
+                  
             kill = false;  
         }
         if (Input.GetKeyDown(FoV20))

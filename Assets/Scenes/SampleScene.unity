@@ -397,7 +397,7 @@ PrefabInstance:
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: Arrow
       value: 
-      objectReference: {fileID: 6236547954700128914, guid: b8b236c83e227714599893e0faab8cb3, type: 3}
+      objectReference: {fileID: 7864430382526774915, guid: b8b236c83e227714599893e0faab8cb3, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: Marker
       value: 
@@ -413,7 +413,7 @@ PrefabInstance:
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: pointFile
       value: 
-      objectReference: {fileID: 4900000, guid: 255de080c51c0c8439dd6c5ea26e39d7, type: 3}
+      objectReference: {fileID: 4900000, guid: fc1edf897f9e0ab4583a6c57f829124b, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: scaleDist
       value: 8
@@ -433,7 +433,7 @@ PrefabInstance:
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: newPointFile
       value: 
-      objectReference: {fileID: 4900000, guid: bded6c2277642c144a2350c5506f0ef5, type: 3}
+      objectReference: {fileID: 4900000, guid: 1a46b6770e27a884c94257ea977177ce, type: 3}
     - target: {fileID: 7955315910885497212, guid: 94dd216d5de95e249b70751dfbe0b6c1, type: 3}
       propertyPath: trainingRunFile
       value: 
