@@ -153,30 +153,37 @@ public class Heli : MonoBehaviour
     private void SpawnArrows(){
         arrow = new Arrow[xNew.Length];
         Quaternion xRotationFix = Quaternion.Euler(90,0,0);
+
         float zOffset = 0.76f;
+        Vector3 offsetVector = new Vector3(0,0,zOffset);
         for(int i =0; i<xNew.Length;i++){
             var Pos = new Vector3(xOrg[i],yOrg[i]+0.5f,zOrg[i]);
-            var target = new Vector3(xNew[i], yNew[i], zNew[i]);
+            var target = new Vector3(xNew[i], yNew[i] + 0.5f, zNew[i]);
             Vector3 direction = target - Pos;
             var yScaling = direction.magnitude / 3.451f;
+
             
             // var xRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (yNew[i] - yOrg[i])) * Mathf.Rad2Deg;
             // //var yRotation = Mathf.Atan((xNew[i] - xOrg[i]) / (zNew[i] - zOrg[i])) * Mathf.Rad2Deg;
             // var yRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (xNew[i] - xOrg[i])) * Mathf.Rad2Deg;
             
             var arrowPoint = Quaternion.LookRotation(direction);
+            
             arrow[i] = Instantiate(Arrow,Pos,transform.rotation);
             if(yScaling>0.2){
-                arrow[i].transform.localScale = new Vector3(0.2f,0.2f,yScaling);
+                arrow[i].transform.localScale = new Vector3(0.2f,yScaling,0.2f);
             }
             else{
                 arrow[i].transform.localScale = new Vector3(yScaling,yScaling,yScaling);
             }
             
             arrow[i].transform.rotation = arrowPoint;
+            Vector3 tiltedOffset = arrow[i].transform.rotation * offsetVector * yScaling;
+            arrow[i].transform.position += tiltedOffset;
             arrow[i].transform.rotation *= xRotationFix;
+
             
-            arrow[i].transform.position += new Vector3(0,zOffset,0);
+            // arrow[i].transform.position += new Vector3(0,zOffset,0);
 
         }
         
@@ -197,6 +204,7 @@ public class Heli : MonoBehaviour
         Ry.SetRow(3, new Vector4(0, 0, 0, 1)); // Homogeneous row
         // Multiply the rotation matrix by the pointOrigin
         Vector3 newOrigin = Ry.MultiplyPoint3x4(pointOrigin) - dx;
+        
         // Debug.Log($"Calculations theta {theta} dx {dx} act {Ry.MultiplyPoint3x4(pointOrigin)} ");
         // Return the new origin and its components (x, y, z)
         return newOrigin;
@@ -239,25 +247,25 @@ public class Heli : MonoBehaviour
     }
 
     private IEnumerator Animation(){
-        GetBehaviourData("exampleMove",false);
+        GetBehaviourData("actualMove",true);
         Debug.Log("Part 1 done");
         GetPointData();
         transform.position = new Vector3(0,5,0);
         // CalcMovement(v[1],pitch[1],time[1]-time[0]);
-        SpawnPoints();
+        //SpawnPoints();
         for (int i=1; i< time.Length;i++){
             var dt = time[i] - time[i-1]; 
             Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt}");
             CalcMovement(v[i],pitch[i],dt);
-            SpawnNewPoints();
+            // SpawnNewPoints();
             SpawnArrows();
             yield return new WaitForSeconds(dt);
             for (int j =0; j<arrow.Count<Arrow>(); j++){
                 Destroy(arrow[j].gameObject);
             }
-            for (int k =0; k<movedMotionPoints.Count<GameObject>();k++){
-                Destroy(movedMotionPoints[k]);
-            }                           
+            // for (int k =0; k<movedMotionPoints.Count<GameObject>();k++){
+            //     Destroy(movedMotionPoints[k]);
+            // }                           
         }
         yield return null;
     }
