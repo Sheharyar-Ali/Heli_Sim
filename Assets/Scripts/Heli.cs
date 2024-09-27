@@ -152,22 +152,31 @@ public class Heli : MonoBehaviour
     }
     private void SpawnArrows(){
         arrow = new Arrow[xNew.Length];
+        Quaternion xRotationFix = Quaternion.Euler(90,0,0);
+        float zOffset = 0.76f;
         for(int i =0; i<xNew.Length;i++){
-            var distDiff = new Vector3(xNew[i] - xOrg[i] , yNew[i] - yOrg[i] , zNew[i] - zOrg[i]);
-            var yScaling = distDiff.magnitude / 3.451f;
-            var yPos = yOrg[i] + (0.76f * yScaling);
-            var Pos = new Vector3(xOrg[i],yPos+0.5f,zOrg[i]);
-            var xRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (yNew[i] - yOrg[i])) * Mathf.Rad2Deg;
-            var yRotation = Mathf.Atan((xNew[i] - xOrg[i]) / (zNew[i] - zOrg[i])) * Mathf.Rad2Deg;
+            var Pos = new Vector3(xOrg[i],yOrg[i]+0.5f,zOrg[i]);
+            var target = new Vector3(xNew[i], yNew[i], zNew[i]);
+            Vector3 direction = target - Pos;
+            var yScaling = direction.magnitude / 3.451f;
+            
+            // var xRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (yNew[i] - yOrg[i])) * Mathf.Rad2Deg;
+            // //var yRotation = Mathf.Atan((xNew[i] - xOrg[i]) / (zNew[i] - zOrg[i])) * Mathf.Rad2Deg;
+            // var yRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (xNew[i] - xOrg[i])) * Mathf.Rad2Deg;
+            
+            var arrowPoint = Quaternion.LookRotation(direction);
             arrow[i] = Instantiate(Arrow,Pos,transform.rotation);
             if(yScaling>0.2){
-                arrow[i].transform.localScale = new Vector3(0.2f,yScaling,0.2f);
+                arrow[i].transform.localScale = new Vector3(0.2f,0.2f,yScaling);
             }
             else{
                 arrow[i].transform.localScale = new Vector3(yScaling,yScaling,yScaling);
             }
             
-            arrow[i].transform.rotation = Quaternion.Euler(xRotation,yRotation,transform.rotation.z);
+            arrow[i].transform.rotation = arrowPoint;
+            arrow[i].transform.rotation *= xRotationFix;
+            
+            arrow[i].transform.position += new Vector3(0,zOffset,0);
 
         }
         
@@ -180,14 +189,15 @@ public class Heli : MonoBehaviour
 
         // Rotation matrix for Y-axis rotation (3x3)
         Matrix4x4 Ry = new Matrix4x4();
-        Ry.SetRow(0, new Vector4(cosTheta, 0, sinTheta, 0));
-        Ry.SetRow(2, new Vector4(0, 1, 0, 0));
-        Ry.SetRow(1, new Vector4(-sinTheta, 0, cosTheta, 0));
+        Ry.SetRow(0, new Vector4(1, 0, 0, 0));
+        // Ry.SetRow(1, new Vector4(-sinTheta, 0, cosTheta, 0));
+        Ry.SetRow(1, new Vector4(0,cosTheta,-sinTheta,0));
+        // Ry.SetRow(2, new Vector4(cosTheta, 0, sinTheta, 0));
+        Ry.SetRow(2, new Vector4(0, sinTheta, cosTheta, 0));
         Ry.SetRow(3, new Vector4(0, 0, 0, 1)); // Homogeneous row
-
         // Multiply the rotation matrix by the pointOrigin
         Vector3 newOrigin = Ry.MultiplyPoint3x4(pointOrigin) - dx;
-
+        // Debug.Log($"Calculations theta {theta} dx {dx} act {Ry.MultiplyPoint3x4(pointOrigin)} ");
         // Return the new origin and its components (x, y, z)
         return newOrigin;
     }
@@ -197,11 +207,13 @@ public class Heli : MonoBehaviour
             buffer.x = xOrg[i];
             buffer.y = yOrg[i];
             buffer.z = zOrg[i];
-            Vector3 dx = new Vector3(u *dt,0,0);
+            
+            Vector3 dx = new Vector3(0,0,u*dt);
             Vector3 outVec = Movement(buffer,dx,theta); 
             xNew[i] = outVec.x;
             yNew[i] = outVec.y;
             zNew[i] = outVec.z;
+            // Debug.Log($"new: {xNew[i]} {yNew[i]} {zNew[i]}");
         }
     }
     private IEnumerator ScreenCap(){
@@ -220,7 +232,8 @@ public class Heli : MonoBehaviour
             yield return new WaitForSeconds(5);
             for (int i =0; i<arrow.Count<Arrow>(); i++){
                 Destroy(arrow[i].gameObject);
-            }  
+            }
+
         }
         
     }
@@ -230,15 +243,22 @@ public class Heli : MonoBehaviour
         Debug.Log("Part 1 done");
         GetPointData();
         transform.position = new Vector3(0,5,0);
-        // for (int i=1; i< time.Length;i++){
-        //     var dt = time[i] - time[i-1]; 
-        //     CalcMovement(v[i],pitch[i],dt);
-        //     SpawnArrows();
-        //     yield return new WaitForSeconds(dt);
-        //     for (int j =0; j<arrow.Count<Arrow>(); j++){
-        //         Destroy(arrow[j].gameObject);
-        //     }             
-        // }
+        // CalcMovement(v[1],pitch[1],time[1]-time[0]);
+        SpawnPoints();
+        for (int i=1; i< time.Length;i++){
+            var dt = time[i] - time[i-1]; 
+            Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt}");
+            CalcMovement(v[i],pitch[i],dt);
+            SpawnNewPoints();
+            SpawnArrows();
+            yield return new WaitForSeconds(dt);
+            for (int j =0; j<arrow.Count<Arrow>(); j++){
+                Destroy(arrow[j].gameObject);
+            }
+            for (int k =0; k<movedMotionPoints.Count<GameObject>();k++){
+                Destroy(movedMotionPoints[k]);
+            }                           
+        }
         yield return null;
     }
     IEnumerator SpawnEasterEgg(){
