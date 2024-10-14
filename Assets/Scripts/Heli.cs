@@ -245,20 +245,43 @@ public class Heli : MonoBehaviour
         }
         
     }
+    private void TakeScreenshot(float v, float theta, float time){
+        string picFolder =  "Assets/Scripts/Images/";
+        string picName = "ActualPitchFlow_t" + time.ToString("F2") + "_v" +  v.ToString("F2") + "_p" + theta.ToString("F2")+".png";
+        ScreenCapture.CaptureScreenshot(picFolder + picName); 
+
+    }
 
     private IEnumerator Animation(){
         GetBehaviourData("actualMove",true);
         Debug.Log("Part 1 done");
         GetPointData();
         transform.position = new Vector3(0,5,0);
+        float[] timeStamps = Enumerable.Range(0, (150 - 5) / 5)
+                                       .Select(i => 5 + i * 5)
+                                       .Select(i => (float)i)
+                                       .ToArray();
+        Debug.Log(timeStamps[0]);
+        // float[] timeStamps = {20f, 40f, 60f, 80f, 100,120,140};
+        //float[] timeStamps = {0.5f, 1.0f, 1.5f, 2.5f, 3.5f, 4.0f};
+        int counter = 0;
         // CalcMovement(v[1],pitch[1],time[1]-time[0]);
         //SpawnPoints();
         for (int i=1; i< time.Length;i++){
-            var dt = time[i] - time[i-1]; 
-            Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt}");
+            var dt = time[i] - time[i-1];
+            v[i] = 0;
             CalcMovement(v[i],pitch[i],dt);
             // SpawnNewPoints();
             SpawnArrows();
+            if((time[i]>= timeStamps[counter] - 0.1 ) & (time[i] < timeStamps[counter]+0.1)){
+                counter+=1;
+                TakeScreenshot(v[i],pitch[i],time[i]);
+                Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt} counter {counter}");
+            }
+            //Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt} counter {counter}");
+            if(counter > timeStamps.Length-1){
+                counter = timeStamps.Length -1;
+            }
             yield return new WaitForSeconds(dt);
             for (int j =0; j<arrow.Count<Arrow>(); j++){
                 Destroy(arrow[j].gameObject);
