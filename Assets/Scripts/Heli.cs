@@ -166,16 +166,24 @@ public class Heli : MonoBehaviour
             // var xRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (yNew[i] - yOrg[i])) * Mathf.Rad2Deg;
             // //var yRotation = Mathf.Atan((xNew[i] - xOrg[i]) / (zNew[i] - zOrg[i])) * Mathf.Rad2Deg;
             // var yRotation = Mathf.Atan((zNew[i] - zOrg[i]) / (xNew[i] - xOrg[i])) * Mathf.Rad2Deg;
-            
-            var arrowPoint = Quaternion.LookRotation(direction);
-            
             arrow[i] = Instantiate(Arrow,Pos,transform.rotation);
+            var arrowPoint = arrow[i].transform.rotation;
+            if(direction!= Vector3.zero){
+                arrowPoint = Quaternion.LookRotation(direction);
+            }
+            
+            
+        
+            if(yScaling == 0){
+                yScaling = 0.02f;
+            }
             if(yScaling>0.2){
                 arrow[i].transform.localScale = new Vector3(0.2f,yScaling,0.2f);
             }
             else{
                 arrow[i].transform.localScale = new Vector3(yScaling,yScaling,yScaling);
             }
+
             
             arrow[i].transform.rotation = arrowPoint;
             Vector3 tiltedOffset = arrow[i].transform.rotation * offsetVector * yScaling;
@@ -215,14 +223,30 @@ public class Heli : MonoBehaviour
             buffer.x = xOrg[i];
             buffer.y = yOrg[i];
             buffer.z = zOrg[i];
-            
             Vector3 dx = new Vector3(0,0,u*dt);
-            Vector3 outVec = Movement(buffer,dx,theta); 
+            Vector3 outVec = Movement(buffer,dx,theta);
             xNew[i] = outVec.x;
             yNew[i] = outVec.y;
             zNew[i] = outVec.z;
-            // Debug.Log($"new: {xNew[i]} {yNew[i]} {zNew[i]}");
+            
         }
+        
+    }
+    private void CalcMovement(float u, float thetaBefore, float thetaNow, float dt){
+        Vector3 buffer = new(0,0,0);
+        for (int i =0; i<xNew.Length;i++){
+            buffer.x = xOrg[i];
+            buffer.y = yOrg[i];
+            buffer.z = zOrg[i];
+            Vector3 dx = new Vector3(0,0,u*dt);
+            var theta = thetaNow - thetaBefore;
+            Vector3 outVec = Movement(buffer,dx,theta);
+            xNew[i] = outVec.x;
+            yNew[i] = outVec.y;
+            zNew[i] = outVec.z;
+            
+        }
+        
     }
     private IEnumerator ScreenCap(){
         // double[] files = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
@@ -252,7 +276,7 @@ public class Heli : MonoBehaviour
 
     }
 
-    private IEnumerator Animation(){
+    private IEnumerator FlowAnimation(){
         GetBehaviourData("actualMove",true);
         Debug.Log("Part 1 done");
         GetPointData();
@@ -270,13 +294,19 @@ public class Heli : MonoBehaviour
         for (int i=1; i< time.Length;i++){
             var dt = time[i] - time[i-1];
             v[i] = 0;
-            CalcMovement(v[i],pitch[i],dt);
-            // SpawnNewPoints();
+            // pitch[i-1] = 0;
+            // pitch[i] = 0;
+            
+            // CalcMovement(v[i],pitch[i],dt);
+            CalcMovement(v[i],pitch[i-1],pitch[i],dt);
             SpawnArrows();
-            if((time[i]>= timeStamps[counter] - 0.1 ) & (time[i] < timeStamps[counter]+0.1)){
-                counter+=1;
+            if((time[i]>= timeStamps[counter] - 0.25 ) & (time[i] < timeStamps[counter]+0.25)){
+            
                 TakeScreenshot(v[i],pitch[i],time[i]);
                 Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt} counter {counter}");
+            }
+            if(time[i] > timeStamps[counter]+0.25){
+                counter+=1;
             }
             //Debug.Log($" time {time[i]} v {v[i]} theta {pitch[i] * Mathf.Rad2Deg} dt {dt} counter {counter}");
             if(counter > timeStamps.Length-1){
@@ -291,6 +321,22 @@ public class Heli : MonoBehaviour
             // }                           
         }
         yield return null;
+    }
+
+    private IEnumerator MoveAnimation(){
+        GetBehaviourData("actualMoveFPS",true);
+        float timestep = time[1]-time[0];
+        for (int i =1; i<time.Length;i++){
+            GetComponent<Rigidbody>().velocity = new Vector3(0f,0f,v[i]);
+            var rotateVector = new Vector3(pitch[i] * Mathf.Rad2Deg, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            transform.rotation = Quaternion.Euler(rotateVector.x,rotateVector.y,rotateVector.z);
+            timestep = time[i] - time[i-1];
+            yield return new WaitForSeconds(timestep);
+        }
+        kill = true;
+        Start();
+
+        
     }
     IEnumerator SpawnEasterEgg(){
         int randVal = UnityEngine.Random.Range(0,30);
@@ -427,30 +473,30 @@ public class Heli : MonoBehaviour
         TextAsset behaviourFile = Resources.Load<TextAsset>(fileName);
         string[] data = behaviourFile.text.Split(new string[] {",", "\n"},StringSplitOptions.None);
         if(actual){
-            int tableSize = data.Length / 5 -1;
+            int tableSize = data.Length / 6 -1;
             time = new float[tableSize];
             v = new float[tableSize];
             pitch = new float[tableSize];
             for (int i=0;i<tableSize; i++){
-                var value = float.Parse(data[5 * (i+1) + 1],CultureInfo.InvariantCulture);
+                var value = float.Parse(data[6 * (i+1) + 1],CultureInfo.InvariantCulture);
                 time[i] = value;
-                var value2 = float.Parse(data[5 * (i+1) + 2],CultureInfo.InvariantCulture);
+                var value2 = float.Parse(data[6 * (i+1) + 2],CultureInfo.InvariantCulture);
                 v[i] = value2;
-                var value3 = float.Parse(data[5 * (i+1) + 4],CultureInfo.InvariantCulture);
+                var value3 = float.Parse(data[6 * (i+1) + 4],CultureInfo.InvariantCulture);
                 pitch[i] = value3;
             }
         }
         else{
-            int tableSize = data.Length / 7 -1;
+            int tableSize = data.Length / 8 -1;
             time = new float[tableSize];
             v = new float[tableSize];
             pitch = new float[tableSize];
             for (int i=0;i<tableSize; i++){
-                var value = float.Parse(data[7 * (i+1) + 1],CultureInfo.InvariantCulture);
+                var value = float.Parse(data[8 * (i+1) + 1],CultureInfo.InvariantCulture);
                 time[i] = value;
-                var value2 = float.Parse(data[7 * (i+1) + 5],CultureInfo.InvariantCulture);
+                var value2 = float.Parse(data[8 * (i+1) + 5],CultureInfo.InvariantCulture);
                 v[i] = value2;
-                var value3 = float.Parse(data[7 * (i+1) + 3],CultureInfo.InvariantCulture);
+                var value3 = float.Parse(data[8 * (i+1) + 3],CultureInfo.InvariantCulture);
                 pitch[i] = value3;
             }           
         }
@@ -758,7 +804,8 @@ public class Heli : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.A)){
             // StartCoroutine(ScreenCap());
-            StartCoroutine(Animation());
+            // StartCoroutine(FlowAnimation());
+            StartCoroutine(MoveAnimation());
         }
         if (Input.GetKeyDown(showMISCScale)){
             SpawnScale();
